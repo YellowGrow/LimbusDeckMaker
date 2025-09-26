@@ -294,7 +294,7 @@ registerCharacter({
         },
         {
             id: 'yi_sang_009',
-            name: '약지 점묘파 스튜던트',
+            name: '약지',
             season: 'normal',
             tier: '3',
             image: './수감자/인격/이상/약지_점묘파_스튜던트/프로필.png',
