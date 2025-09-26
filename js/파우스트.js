@@ -63,7 +63,7 @@ registerCharacter({
                         conditionImage: './기타/자원_탐식.png',
                         condition: 'X4 공명',
                         name: '관찰',
-                        effect: '합 진행 시 대상의 합 위력 -2',
+                        effect: '공격 종료 시 충전 횟수 1 증가<br>공격 종료 시 무작위 아군 1명의 충전 횟수 1 증가',
                     }
                 ],
                 supportPassives: [
@@ -71,7 +71,7 @@ registerCharacter({
                         conditionImage: './기타/자원_탐식.png',
                         condition: 'X3 공명',
                         name: '분석',
-                        effect: '최대 체력이 가장 높은 아군 1명 합 진행 시 합 위력 +1'
+                        effect: '최대 체력이 가장 낮은 아군 1명 충전 횟수 얻는 값 +1'
                     }
                 ],
                 keywords: ['파열', '관통']

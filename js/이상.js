@@ -294,7 +294,7 @@ registerCharacter({
         },
         {
             id: 'yi_sang_009',
-            name: '약지',
+            name: '약지 점묘파 스튜던트',
             season: 'normal',
             tier: '3',
             image: './수감자/인격/이상/약지_점묘파_스튜던트/프로필.png',
@@ -336,7 +336,7 @@ registerCharacter({
         },
         {
             id: 'yi_sang_010',
-            name: '로보토미 E.G.O::엄숙한 애도와알라랄라랄랄랄랄라',
+            name: '로보토미 E.G.O::엄숙한 애도',
             season: 'walpurgis',
             tier: '3',
             image: './수감자/인격/이상/로보토미_E.G.O_엄숙한_애도/프로필.png',
