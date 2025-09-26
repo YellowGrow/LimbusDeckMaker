@@ -380,3 +380,19 @@ body {
     overflow:visible;
     height:auto;
 }
+.deck-grid {
+    display:grid;
+    grid-template-columns:repeat(6, minmax(0,1fr)); /* 중요 */
+}
+
+.party-slot-wrapper,
+.party-slot,
+.personality-name {
+    min-width:0; /* 축소 허용 */
+}
+
+.personality-name {
+    white-space:nowrap;
+    overflow:hidden;      /* 실제 잘려 넣을 때 시각적 클리핑 */
+    /* text-overflow:ellipsis; 는 JS가 ‘…’ 직접 붙이니 필수는 아님 */
+}

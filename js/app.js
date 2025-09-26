@@ -572,6 +572,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCurrentDeck() {
+        function truncateTextToFit(el) {
+            // 이미 처리했다면 원본 복구용 데이터 가져오기
+            const original = el.getAttribute('data-full') || el.textContent;
+            if (!el.getAttribute('data-full')) {
+                el.setAttribute('data-full', original);
+            }
+            // 한 번 전체로 되돌린 뒤 시작
+            el.textContent = original;
+
+            // 0폭이면(아직 레이아웃 안 끝났으면) 나중에 다시 호출
+            if (!el.clientWidth) return;
+
+            // 넘치지 않으면 그대로
+            if (el.scrollWidth <= el.clientWidth) return;
+
+            // 실제 줄이기
+            let text = original;
+            // ‘…’ 붙일 자리 고려: 한 글자씩 줄이면서 검사
+            while (text.length > 0 && el.scrollWidth > el.clientWidth) {
+                text = text.slice(0, -1);
+                el.textContent = text + '…';
+            }
+            // 빈문자 방지: 너무 짧아졌을 경우 최소 1글자 + …
+            if (text.length === 0) {
+                el.textContent = '…';
+            }
+        }
+
         const deck = decks.find(d => d.id === currentDeckId);
         if (!deck) {
             deckNameInput.value = '';
@@ -675,6 +703,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderSummaries();
+
+        // 이름 텍스트 실제 잘라 넣기 (레이아웃 계산 이후 실행 보장 위해 rAF)
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.personality-name').forEach(truncateTextToFit);
+        });
     }
 
     function addDeck() {
@@ -967,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.prepend(sq);
         }
         btn.addEventListener('click', () => toggleFilterBtn(btn));
-    });
+    }); 
 
     // 이벤트 리스너
     addDeckBtn.addEventListener('click', addDeck);

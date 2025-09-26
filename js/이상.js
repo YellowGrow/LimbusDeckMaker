@@ -336,7 +336,7 @@ registerCharacter({
         },
         {
             id: 'yi_sang_010',
-            name: '로보토미 E.G.O::엄숙한 애도',
+            name: '로보토미 E.G.O::엄숙한 애도dhdhdfdfdf',
             season: 'walpurgis',
             tier: '3',
             image: './수감자/인격/이상/로보토미_E.G.O_엄숙한_애도/프로필.png',
