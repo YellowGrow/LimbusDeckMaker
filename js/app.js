@@ -2,17 +2,132 @@
 
 (function() {
 
+/* =========================================================
+   1. 키워드 하이라이트: 대량 지정 + 수동 지정
+========================================================= */
+
+/*
+  형식:
+  "키1", "키2", "키3": "Color",
+  여러 줄 가능, 끝에 쉼표 있어도 됨.
+*/
+const KEYWORD_BULK_SPEC = `
+    "출혈", "침잠", "파열", "진동", "화상", "마비", "취약", "속박", "위력 감소", "공격 위력 감소",
+    "수비 위력 감소", "합 위력 감소", "더하기 코인 약화", "빼기 코인 약화", "피해량 감소",
+    "공격 레벨 감소", "방어 레벨 감소", "분노 피해량 감소", "색욕 피해량 감소",
+    "나태 피해량 감소", "탐식 피해량 감소", "우울 피해량 감소", "오만 피해량 감소",
+    "질투 피해량 감소", "참격 피해량 감소", "관통 피해량 감소", "타격 피해량 감소",
+    "분노 취약", "색욕 취약", "나태 취약", "탐식 취약", "우울 취약", "오만 취약",
+    "질투 취약", "참격 취약", "관통 취약", "타격 취약", "정신력 회복 효율 감소",
+    "정신력 감소 효율 증가", "체력 회복 감소", "행동 불가", "[피아식별불가]": "red",
+
+    "호흡", "충전", '보호", "신속", "위력 증가", "공격 위력 증가", "수비 위력 증가", "합 위력 증가",
+    "더하기 코인 강화", "빼기 코인 강화", "피해량 증가", "약점 공격 시 피해량 증가", "공격 레벨 증가",
+    "수비 레벨 증가", "분노 피해량 증가", "색욕 피해량 증가", "나태 피해량 증가",
+    "탐식 피해량 증가", "우울 피해량 증가", "오만 피해량 증가", "질투 피해량 증가",
+    "참격 피해량 증가", "관통 피해량 증가", "타격 피해량 증가", "분노 보호",
+    "색욕 보호", "나태 보호", "탐식 보호", "우울 보호", "오만 보호", "질투 보호",
+    "참격 보호", "관통 보호", "타격 보호", "정신력 회복 효율 증가", "정신력 감소 효율 감소",
+    "체력 회복 증가", "도발치": "yellow"
+`;
+
+/* 수동(우선) 덮어쓰기용 맵 */
+const KEYWORD_HIGHLIGHT_EXTRA_MAP = {
+  /* "호흡": "#13836e",*/
+};
+
+/* -------- Bulk Spec 파서 -------- */
+function parseBulkSpec(spec) {
+    const map = {};
+    if (!spec) return map;
+    const cleaned = spec.replace(/\/\/.*$/gm, "");
+    const groupRegex = /((?:"[^"]+"\s*,\s*)*"[^"]+")\s*:\s*"([^"]+)"\s*,?/g;
+    let m;
+    while ((m = groupRegex.exec(cleaned)) !== null) {
+        const wordsPart = m[1];
+        const color = m[2].trim();
+        wordsPart.split(/\s*,\s*/).forEach(w => {
+            const word = w.replace(/^"|"$/g, '').trim();
+            if (word) map[word] = color;
+        });
+    }
+    return map;
+}
+
+let PARSED_BULK_MAP = {};
+try {
+    PARSED_BULK_MAP = parseBulkSpec(KEYWORD_BULK_SPEC);
+} catch (e) {
+    console.warn('[Highlight] Bulk spec parsing failed:', e);
+}
+
+const KEYWORD_HIGHLIGHT_MAP = {
+    ...PARSED_BULK_MAP,
+    ...KEYWORD_HIGHLIGHT_EXTRA_MAP
+};
+
+/* 안전한 CSS 클래스 네이밍 */
+function slugKeyword(word) {
+    return word
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9가-힣]+/gi, '-')      // 한/영/숫자 외 → -
+        .replace(/^-+|-+$/g,'')                 // 앞뒤 -
+        || 'kw';
+}
+
+/* 동적 스타일 삽입 */
+(function injectKeywordStyles() {
+    const styleEl = document.createElement("style");
+    const lines = [
+        ".kw{font-weight:700; text-shadow:0 0 2px rgba(0,0,0,.35);}"
+    ];
+    for (const [word, color] of Object.entries(KEYWORD_HIGHLIGHT_MAP)) {
+        const cls = "kw-" + slugKeyword(word);
+        lines.push(`.kw.${cls}{color:${color} !important;}`);
+    }
+    styleEl.textContent = lines.join("\n");
+    document.head.appendChild(styleEl);
+})();
+
+/* 문자열 -> 하이라이트 HTML */
+function highlightKeywords(rawText) {
+    if (!rawText) return "";
+    let safe = rawText
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/\n/g,"<br>");
+
+    const words = Object.keys(KEYWORD_HIGHLIGHT_MAP)
+        .filter(w => w && w.trim())
+        .sort((a,b)=>b.length - a.length);
+    if (!words.length) return safe;
+
+    const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    const pattern = new RegExp("(" + escaped.join("|") + ")", "g");
+    safe = safe.replace(pattern, m => {
+        const cls = "kw-" + slugKeyword(m);
+        return `<span class="kw ${cls}">${m}</span>`;
+    });
+    return safe;
+}
+
+/* =========================================================
+   2. 기존 앱 로직 (하이라이트 적용만 삽입)
+========================================================= */
+
 let decks = [];
 let currentDeckId = null;
 
-/* ========= 인격 이름 실제 잘라 '…' 붙이기 유틸 ========= */
+/* ========= 인격 이름 잘라 '…' 붙이기 ========= */
 function truncateTextToFit(el) {
     const original = el.getAttribute('data-full') || el.textContent;
     if (!el.getAttribute('data-full')) el.setAttribute('data-full', original);
 
-    el.textContent = original;                // 원본으로 초기화
-    if (!el.clientWidth) return;              // 레이아웃 미완성시 패스
-    if (el.scrollWidth <= el.clientWidth) return; // 넘치지 않으면 그대로
+    el.textContent = original;
+    if (!el.clientWidth) return;
+    if (el.scrollWidth <= el.clientWidth) return;
 
     let text = original;
     while (text.length > 0 && el.scrollWidth > el.clientWidth) {
@@ -24,7 +139,6 @@ function truncateTextToFit(el) {
 
 function applyPersonalityNameTruncation() {
     const nodes = document.querySelectorAll('.deck-grid .personality-name');
-    // 원본 복구 후 다시 계산 (리사이즈/재렌더 대비)
     nodes.forEach(el => {
         const full = el.getAttribute('data-full');
         if (full) el.textContent = full;
@@ -175,7 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    /* 필터 상태 */
     const isFilterActive = (key) => {
         const btn = document.querySelector(`.ban-btn[data-filter="${key}"]`);
         return btn && btn.dataset.active === 'true';
@@ -186,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hidePrevSeason = isFilterActive('prevseason');
         const s = item?.season;
         if (hideCollabo && s === 'collabo') return false;
-        if (hideWalpurgis && s === 'walpurgis') return false;
+               if (hideWalpurgis && s === 'walpurgis') return false;
         if (hidePrevSeason && typeof s === 'number' && s === (CURRENT_SEASON - 1)) return false;
         return true;
     };
@@ -219,17 +332,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
             const groupsHtml = [...groups.values()].map(g => {
-                const itemsHtml = g.items.map(it => `
-                    <div class="passive-block compact">
-                        <div class="passive-line"><strong>이름:</strong><span>${it.name}</span></div>
-                        <div class="passive-line"><strong>효과:</strong><span class="effect" style="white-space:pre-line;">${it.effect}</span></div>
-                    </div>
-                `).join('<hr style="border-color:#444; margin:8px 0;">');
+                const itemsHtml = g.items.map(it => {
+                    const nameHtml   = highlightKeywords(it.name);
+                    const effectHtml = highlightKeywords(it.effect);
+                    return `
+                        <div class="passive-block compact">
+                            <div class="passive-line"><strong>이름:</strong><span>${nameHtml}</span></div>
+                            <div class="passive-line"><strong>효과:</strong><span class="effect">${effectHtml}</span></div>
+                        </div>
+                    `;
+                }).join('<hr style="border-color:#444; margin:8px 0;">');
                 return `
                     <div class="passive-group">
                         <div class="passive-line">
                             <strong>조건:</strong>
-                            <span>${g.img ? `<img src="${g.img}" class="condition-icon">` : ''}${g.cond}</span>
+                            <span>${g.img ? `<img src="${g.img}" class="condition-icon">` : ''}${highlightKeywords(g.cond)}</span>
                         </div>
                         <div class="passive-items">${itemsHtml}</div>
                     </div>
@@ -269,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="detail-section">
                         <h5>키워드</h5>
                         <div class="detail-keywords-list">
-                            ${(personalityDetails.keywords || []).map(k=>`<span>${k}</span>`).join('')}
+                            ${(personalityDetails.keywords || []).map(k=>`<span>${highlightKeywords(k)}</span>`).join('')}
                         </div>
                     </div>
                 </div>
@@ -278,18 +395,19 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (egoDetails) {
             const hasAwakening = hasMeaningfulVersion(egoDetails.awakening);
             const hasCorrosion = hasMeaningfulVersion(egoDetails.corrosion);
+
             const passiveHtml = egoDetails.passive ? `
                 <div class="ego-passive-box">
                     <h5>패시브</h5>
-                    <div class="passive-line"><strong>이름:</strong><span>${egoDetails.passive.name||''}</span></div>
-                    <div class="passive-line"><strong>효과:</strong><span class="effect" style="white-space:pre-line;">${egoDetails.passive.effect||''}</span></div>
+                    <div class="passive-line"><strong>이름:</strong><span>${highlightKeywords(egoDetails.passive.name||'')}</span></div>
+                    <div class="passive-line"><strong>효과:</strong><span class="effect">${highlightKeywords(egoDetails.passive.effect||'')}</span></div>
                 </div>
             ` : '';
             const keywordsHtml = egoDetails.keywords?.length ? `
                 <div class="ego-keywords-box">
                     <h5>키워드</h5>
                     <div class="ego-keywords-pills">
-                        ${egoDetails.keywords.map(k=>`<span>${k}</span>`).join('')}
+                        ${egoDetails.keywords.map(k=>`<span>${highlightKeywords(k)}</span>`).join('')}
                     </div>
                 </div>
             ` : '';
@@ -320,13 +438,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             const idxIcon = (!hideIndex)
                                 ? (coin.indexIcon || COIN_INDEX_ICONS[idx] || '')
                                 : '';
-                            const txt = (coin.effectLines
-                                    ? coin.effectLines.join('\\n')
+                            const raw = (coin.effectLines
+                                    ? coin.effectLines.join('\n')
                                     : (coin.effect || '')
-                                ).replace(/&/g,'&amp;')
-                                 .replace(/</g,'&lt;')
-                                 .replace(/>/g,'&gt;')
-                                 .replace(/\\n/g,'<br>');
+                                );
+                            const txt = highlightKeywords(raw);
                             const leftPart = hideIndex ? '' : `
                                 <div class="coin-effect-left">
                                     ${idxIcon
@@ -599,7 +715,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCurrentDeck() {
-
         const deck = decks.find(d => d.id === currentDeckId);
         if (!deck) {
             deckNameInput.value = '';
@@ -703,8 +818,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderSummaries();
-
-        // 이름 텍스트 실제 잘라 넣기 (레이아웃 계산 이후 실행 보장 위해 rAF)
         applyPersonalityNameTruncation();
     }
 
@@ -999,9 +1112,8 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.prepend(sq);
         }
         btn.addEventListener('click', () => toggleFilterBtn(btn));
-    }); 
+    });
 
-    // 이벤트 리스너
     addDeckBtn.addEventListener('click', addDeck);
     deckNameInput.addEventListener('input', (e) => updateDeckName(e.target.value));
     selectionModal.addEventListener('click', (e) => {
@@ -1017,7 +1129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     importCurrentBtn.addEventListener('click', importCurrentDeck);
     captureDeckBtn.addEventListener('click', captureDeckImage);
 
-    // 초기 덱 하나 생성
+    // 초기 덱
     addDeck();
 });
 
