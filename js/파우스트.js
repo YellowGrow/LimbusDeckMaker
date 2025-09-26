@@ -3,16 +3,16 @@
 /* 이상의 모든 인격 + 에고 정의 */
 registerCharacter({
     characterName: '파우스트',
-    defaultIcon: './기타/수감자_이상.png',
+    defaultIcon: './기타/수감자_파우스트.png',
     personalities: [
         {
             id: 'faust_001',
             name: 'LCB 수감자',
             season: 'normal',
-            image: './수감자/인격/이상/LCB_수감자/프로필.png',
+            image: './수감자/인격/파우스트/LCB_수감자/프로필.png',
             tier: '1',
-            skills: ['gloom', 'gloom', 'gloom', 'envy', 'envy', 'sloth'],
-            defense: { type: 'guard', sin: 'gloom' },
+            skills: ['pride', 'pride', 'pride', 'sloth', 'sloth', 'gluttony'],
+            defense: { type: 'evade', sin: 'pride' },
             details: {
                 fullImage: './수감자/인격/이상/LCB_수감자/일러스트.png',
                 skillIcons: [
@@ -21,41 +21,41 @@ registerCharacter({
                     './수감자/인격/이상/LCB_수감자/3스킬.png', 
                     './수감자/인격/이상/LCB_수감자/수비스킬.png'
                 ],
-                skillTypes: ['slash', 'pierce', 'slash'],
+                skillTypes: ['blunt', 'blunt', 'pierce'],
                 passives: [
                     {
-                        conditionImage: './기타/자원_우울.png',
-                        condition: 'X4 공명',
-                        name: '정보전달',
-                        effect: '조작 패널에서 자신의 뒤에 있는 아군 2명에게 피해량 증가 1 부여',
+                        conditionImage: './기타/자원_오만.png',
+                        condition: 'X2 공명',
+                        name: '분석',
+                        effect: '부정적인 효과가 걸려있는 대상에게 가하는 피해량 +10%',
                     }
                 ],
                 supportPassives: [
                     {
-                        conditionImage: './기타/자원_우울.png',
-                        condition: 'X4 보유',
-                        name: '정보중화',
-                        effect: '정신력이 가장 낮은 아군 1명 이번 턴에 정신력이 감소한 경우 턴 종료 시 정신력 10 회복'
+                        conditionImage: './기타/자원_오만.png',
+                        condition: 'X3 보유',
+                        name: '관찰',
+                        effect: '최대 체력이 가장 높은 아군 1명 공격 적중 시 25% 확률로 공격 레벨 감소 2 부여'
                     }
                 ],
-                keywords: ['침잠']
+                keywords: []
             }
         },
         {
             id: 'faust_002',
-            name: '남부 세븐 협회 6과',
+            name: 'W사 2등급 정리 요원',
             season: 'normal',
             tier: '2',
-            image: './수감자/인격/이상/남부_세븐_협회_6과/프로필.png',
-            skills: ['gloom', 'gloom', 'gloom', 'gluttony', 'gluttony', 'sloth'],
-            defense: { type: 'guard', sin: 'gluttony' },
+            image: './수감자/인격/파우스트/W사_2등급_정리_요원/프로필.png',
+            skills: ['envy', 'envy', 'envy', 'gloom', 'gloom', 'wrath'],
+            defense: { type: 'guard', sin: 'envy' },
             details: {
-                fullImage: './수감자/인격/이상/남부_세븐_협회_6과/일러스트.png',
+                fullImage: './수감자/인격/파우스트/W사_2등급_정리_요원/일러스트.png',
                 skillIcons: [
-                    './수감자/인격/이상/남부_세븐_협회_6과/1스킬.png', 
-                    './수감자/인격/이상/남부_세븐_협회_6과/2스킬.png', 
-                    './수감자/인격/이상/남부_세븐_협회_6과/3스킬.png', 
-                    './수감자/인격/이상/남부_세븐_협회_6과/수비스킬.png'
+                    './수감자/인격/파우스트/W사_2등급_정리_요원/1스킬.png', 
+                    './수감자/인격/파우스트/W사_2등급_정리_요원/2스킬.png', 
+                    './수감자/인격/파우스트/W사_2등급_정리_요원/3스킬.png', 
+                    './수감자/인격/파우스트/W사_2등급_정리_요원/수비스킬.png'
                 ],
                 skillTypes: ['pierce', 'pierce', 'blunt'],
                 passives: [
