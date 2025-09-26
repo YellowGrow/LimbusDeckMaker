@@ -1,0 +1,2566 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>림버스 컴퍼니 덱 빌더 v3.7</title>
+<script src="https://kit.fontawesome.com/83ec3fb34f.js" crossorigin="anonymous"></script>
+<style>
+/* =========================================================
+   Root / Base
+========================================================= */
+:root {
+    --primary-color:#007bff;
+    --dark-bg:#404040;
+    --light-bg:#f0f2f5;
+    --border-color:#ccc;
+}
+body {
+    font-family:sans-serif;
+    margin:0;
+    background-color:var(--light-bg);
+    display:flex;
+    height:100vh;
+    color:#333;
+    overflow:hidden;
+}
+.container {
+    display:flex;
+    width:100%;
+    max-width:1600px;
+    margin:auto;
+    background:#fff;
+    box-shadow:0 0 15px rgba(0,0,0,.1);
+    border-radius:8px;
+    overflow:hidden;
+    height:95vh;
+}
+
+/* Sidebar */
+.sidebar { width:220px; background-color:var(--dark-bg); color:#fff; padding:15px; display:flex; flex-direction:column; flex-shrink:0; }
+.deck-list-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #666; padding-bottom:10px; margin-bottom:15px; }
+.deck-list-header h2 { margin:0; font-size:1.2em; }
+.header-actions { display:flex; gap:8px; }
+.header-actions button { background:none; border:none; color:#ddd; font-size:1.6em; cursor:pointer; padding:0 4px; transition:color .2s; }
+.header-actions button:hover { color:#fff; }
+#deck-list-wrapper { flex-grow:1; overflow-y:auto; padding-right:5px; display:flex; flex-direction:column; }
+#add-deck-btn { background-color:#5a5a5a; color:#fff; border:none; padding:10px; border-radius:5px; cursor:pointer; font-size:.9em; text-align:center; transition:background-color .2s; margin-top:10px; width:100%; flex-shrink:0; }
+#add-deck-btn:hover { background-color:#6a6a6a; }
+.deck-item { display:flex; justify-content:space-between; align-items:center; padding:12px 10px; cursor:grab; border-radius:5px; margin-bottom:5px; transition:background-color .2s; border:1px solid transparent; border-bottom:1px solid #555; }
+.deck-item.dragging { opacity:.5; background:#555; }
+.deck-item.drag-over { border-top:2px solid var(--primary-color); }
+.deck-item-name { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; }
+.deck-item.active { background-color:var(--primary-color); }
+.delete-deck-btn { background:none; border:none; color:#ffcccc; font-size:1.2em; cursor:pointer; margin-left:10px; }
+
+/* Main layout / header */
+.main-content { flex-grow:1; padding:20px; display:flex; flex-direction:column; }
+.deck-header { display:flex; justify-content:flex-start; align-items:flex-start; margin-bottom:20px; gap:16px; flex-wrap:wrap; }
+#deck-name-input { flex:1 1 260px; padding:10px; font-size:1.5em; border:1px solid var(--border-color); border-radius:5px; min-width:220px; }
+
+/* NEW: mid icon bar */
+.mid-icon-bar { display:flex; gap:10px; padding-top:4px; }
+.mid-icon-bar button { background:#f4f4f4; border:1px solid #d0d0d0; color:#555; font-size:1.3em; cursor:pointer; width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:8px; transition:.15s background,.15s color,.15s border-color; }
+.mid-icon-bar button:hover { background:#e9f2ff; color:#000; border-color:var(--primary-color); }
+.mid-icon-bar button:active { transform:translateY(1px); }
+
+/* Filter bar */
+.filter-bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; font-size:.85em; line-height:1.2; background:#f6f6f6; border:1px solid #ddd; padding:8px 10px; border-radius:6px; max-width:640px; }
+.filter-bar .ban-label { font-weight:bold; color:#444; margin-right:4px; }
+.ban-btn { cursor:pointer; background:#fff; border:1px solid #bbb; padding:4px 8px; border-radius:4px; font-size:.85em; display:inline-flex; align-items:center; gap:4px; user-select:none; transition:.15s background,.15s color,.15s border-color; }
+.ban-btn:hover { background:#eef4ff; border-color:var(--primary-color); }
+.ban-btn[data-active="true"] { background:var(--primary-color); color:#fff; border-color:var(--primary-color); }
+.ban-btn span.square { font-weight:700; width:1.1em; text-align:center; display:inline-block; }
+
+/* Grid slots */
+.deck-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:20px; flex-grow:1; overflow-y:auto; padding:15px; }
+.party-slot-wrapper { position:relative; }
+.numbering-btn { position:absolute; top:-8px; left:-8px; width:24px; height:24px; background-color:#888; color:#fff; border:2px solid #fff; border-radius:50%; cursor:pointer; display:flex; justify-content:center; align-items:center; font-weight:bold; z-index:10; box-shadow:0 0 5px rgba(0,0,0,.5); }
+.numbering-btn.numbered { background-color:#e67e22; }
+.party-slot { border:2px solid var(--border-color); border-radius:8px; background-color:#fafafa; display:flex; flex-direction:column; overflow:hidden; }
+.personality-name { height:30px; background-color:#fff; border-bottom:1px dashed #e0c5a3; display:flex; align-items:center; justify-content:center; font-size:.9em; font-weight:bold; color:#555; padding:0 5px; box-sizing:border-box; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.character-slot { width:100%; aspect-ratio:1/1; background-color:#e0f0ff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:3em; color:#aaa; background-size:cover; background-position:center; position:relative; }
+.tier-icon { position:absolute; top:5px; right:5px; height:17%; width:auto; pointer-events:none; }
+.ego-grid { display:flex; flex-direction:column; }
+.ego-slot { position:relative; overflow:hidden; height:44px; background-size:cover; background-position:center; background-color:#fff; border-top:1px dashed #e0c5a3; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:.8em; font-weight:bold; color:#bfa88b; background-repeat:no-repeat; }
+.ego-slot.has-ego { justify-content:flex-start !important; align-items:center !important; padding:0; }
+.ego-slot-name { position:static !important; padding:4px 8px !important; margin:0; font-size:20px !important; font-weight:800; line-height:1; color:#fff; letter-spacing:.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000; pointer-events:none; user-select:none; box-sizing:border-box; }
+.ego-slot:not(.has-ego) { background-size:auto 75% !important; }
+
+/* Modal selection */
+.modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,.6); display:none; justify-content:center; align-items:center; z-index:1000; }
+.modal-content { background-color:#fff; padding:20px; border-radius:10px; width:80%; max-width:800px; max-height:80%; display:flex; flex-direction:column; }
+#selection-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:10px; overflow-y:auto; padding:10px; }
+#selection-grid .item-wrapper { position:relative; }
+.personality-select-image { width:100%; cursor:pointer; border-radius:5px; border:2px solid transparent; display:block; }
+.deselect-button { cursor:pointer; border:2px dashed #ccc; border-radius:5px; display:flex; align-items:center; justify-content:center; background-color:#f0f0f0; color:#888; font-weight:bold; font-size:.9em; transition:background-color .2s,border-color .2s; min-height:100px; }
+.deselect-button:hover { background-color:#e0e0e0; border-color:#aaa; }
+.tier-icon-modal { position:absolute; top:4px; right:4px; height:17%; width:auto; pointer-events:none; }
+
+/* Export/Import modal */
+#io-modal-content h3 { margin-top:0; }
+#io-modal-content textarea { width:100%; min-height:200px; margin:15px 0; font-family:monospace; resize:vertical; box-sizing:border-box; }
+#io-modal-content .modal-actions { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; }
+#io-modal-content button { background-color:var(--primary-color); color:#fff; border:none; padding:10px 15px; border-radius:5px; cursor:pointer; }
+#io-modal-content button.secondary { background-color:#6c757d; }
+
+/* Summaries */
+.skill-summary, .defense-summary { display:flex; justify-content:center; align-items:center; padding:10px 0; border-top:2px solid var(--border-color); flex-shrink:0; }
+.skill-summary { gap:30px; padding-top:20px; }
+.defense-summary { padding-bottom:10px; border-top:none; gap:8px; min-height:60px; box-sizing:border-box; }
+.skill-item { display:flex; align-items:center; gap:8px; }
+.skill-item img, .defense-summary img { width:40px; height:40px; }
+.skill-item span { font-size:1.8em; font-weight:bold; min-width:30px; text-align:left; }
+
+/* Detail view core */
+#detail-view { position:absolute; display:none; width:440px; background-color:#2c2c2c; color:#f0f0f0; border:1px solid #555; box-shadow:0 5px 15px rgba(0,0,0,.5); border-radius:8px; z-index:1100; padding:0; pointer-events:none; overflow:hidden; }
+.detail-illustration-top { width:100%; height:250px; background-color:#1a1a1a; background-size:cover; background-position:center top; }
+.detail-illustration-top.ego-image { height:200px; background-size:contain; background-repeat:no-repeat; background-position:center; }
+.detail-info-bottom { padding:12px; font-size:.9em; line-height:1.5; display:flex; flex-direction:column; gap:12px; }
+.detail-card-header { padding-bottom:8px; }
+.detail-card-header h4 { margin:0; font-size:1.2em; border-bottom:1px solid #444; padding-bottom:8px; }
+.detail-section h5 { margin:0 0 8px 0; font-size:1em; color:#e67e22; }
+.passive-line { display:flex; align-items:flex-start; gap:8px; }
+.passive-line > strong { flex-shrink:0; width:40px; color:#bbb; }
+.passive-line > span { word-break:break-all; }
+.condition-icon { width:1.4em; height:1.4em; margin-right:4px; object-fit:contain; vertical-align:middle; }
+.detail-skills-grid { display:flex; justify-content:space-around; gap:10px; }
+.skill-with-type .skill-icon { width:76px !important; height:76px !important; border-radius:50% !important; display:block; object-fit:cover; }
+.skill-with-type .skill-type-badge { width:auto !important; height:22px !important; display:block; border-radius:0 !important; object-fit:contain; }
+.detail-keywords-list { display:flex; flex-wrap:wrap; gap:6px; }
+.detail-keywords-list span { background-color:#555; padding:3px 8px; border-radius:12px; font-size:.85em; }
+.passive-group { margin-top:6px; }
+.passive-items { margin-top:6px; }
+.passive-block.compact { margin:0; }
+.skill-with-type { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:70px; }
+
+#detail-view.ego-wide { width:1024px; max-width:calc(100vw - 40px); }
+
+/* Personality detail refinements */
+.detail-info-bottom.personality { gap:10px; }
+.detail-info-bottom.personality .detail-section { background:#222; padding:8px 10px; border-radius:6px; margin:0; }
+.detail-info-bottom.personality .detail-section > h5 { font-size:1em !important; margin:0 0 8px 0 !important; line-height:1.2; color:#e67e22; }
+.detail-info-bottom.personality .detail-section hr { border:none; border-top:1px solid #333; margin:8px 0; }
+.detail-info-bottom.personality .detail-card-header { padding-bottom:4px; margin-bottom:-2px; }
+.detail-info-bottom.personality .detail-card-header h4 { font-size:1.4em; margin:0; border-bottom:1px solid #333; padding:4px 0 8px; letter-spacing:.5px; }
+.detail-info-bottom.personality .passive-line { font-size:1em !important; line-height:1.5; }
+.detail-info-bottom.personality .passive-line > strong { font-size:1em !important; font-weight:600; width:40px !important; letter-spacing:0; color:#bbb; }
+.detail-info-bottom.personality .detail-keywords-list span { font-size:.85em !important; letter-spacing:0; padding:3px 8px; }
+
+/* === 누락되었던 EGO 상세 / Wide 레이아웃 관련 스타일 복구 시작 === */
+.ego-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.ego-stat { background-color:#3a3a3a; padding:5px 8px; border-radius:4px; }
+.ego-stat .label { color:#bbb; font-size:.8em; }
+.ego-stat .value { font-weight:bold; font-size:1.1em; }
+.ego-cost-list { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+.ego-cost-item { display:inline-flex; align-items:center; gap:4px; background-color:#222; padding:2px 6px; border-radius:4px; }
+.ego-cost-item img { width:24px; height:24px; }
+
+.detail-illustration-top.ego-image.square {
+    aspect-ratio:unset !important;
+    height:420px !important;
+    background-size:auto 100% !important;
+    background-position:center center !important;
+    background-repeat:no-repeat !important;
+    border-bottom:1px solid #333;
+}
+
+#detail-view .ego-name h4 {
+  padding:0 !important;
+  margin:0 0 4px 0 !important;
+  line-height:1.1 !important;
+  font-size:1.65em !important;
+}
+
+.ego-layout { display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start; }
+.ego-left { flex:0 0 300px; display:flex; flex-direction:column; gap:12px; }
+.ego-right { flex:1; display:flex; gap:20px; flex-wrap:wrap; align-items:stretch; }
+.ego-right.two { flex-wrap:nowrap; }
+.ego-right.two .ego-version-block { flex:1 1 0; min-width:0; }
+
+@media (max-width:1100px) {
+    .ego-right.two { flex-wrap:wrap; }
+    .ego-left { flex:1 1 100%; }
+}
+@media (max-width:1050px) {
+    .ego-left { flex:1 1 100%; max-width:100%; }
+    .ego-right.two .ego-version-block,
+    .ego-right.one .ego-version-block { flex:1 1 100%; }
+}
+
+.ego-cost-box,
+.ego-passive-box,
+.ego-keywords-box { background:#222; padding:8px 10px; border-radius:6px; }
+.ego-cost-box h5,
+.ego-passive-box h5,
+.ego-keywords-box h5 { margin:0 0 6px 0; font-size:1em !important; line-height:1.25; color:#e67e22; }
+
+.ego-keywords-pills { display:flex; flex-wrap:wrap; gap:6px; }
+.ego-keywords-pills span { background:#444; padding:4px 10px; border-radius:14px; font-size:.85em !important; letter-spacing:0; }
+
+.ego-version-block {
+    margin-top:0 !important;
+    background:#1f1f1f;
+    border:1px solid #333;
+    border-radius:8px;
+    padding:14px 16px 18px;
+    display:flex;
+    flex-direction:column;
+}
+.ego-version-block > h5 {
+    margin:0 0 12px 0;
+    font-size:1em;
+    color:#ffa540;
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.ego-version-meta {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+    gap:10px;
+    margin-bottom:14px;
+}
+.meta-item {
+    background:#2a2a2a;
+    border-radius:6px;
+    padding:8px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+}
+.meta-item .label {
+    font-size:.85em !important;
+    letter-spacing:.3px;
+    color:#bbb;
+    text-transform:uppercase;
+}
+.meta-item .value {
+    font-weight:600;
+    font-size:.95em;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    flex-wrap:wrap;
+}
+.meta-item .value img { height:24px; width:24px; object-fit:contain; }
+.meta-item-coins { grid-column:1 / -1; }
+.meta-item-coins .value.coin-seq { flex-wrap:wrap; gap:4px; }
+
+.value.coin-seq img.coin-face-icon {
+    width:22px;
+    height:22px;
+    object-fit:contain;
+    filter:drop-shadow(0 0 2px rgba(0,0,0,.4));
+}
+
+.ego-coin-effects { display:flex; flex-direction:column; gap:8px; flex:1; }
+.coin-effect-card {
+    background:#262626;
+    border:1px solid #2a2a2a;
+    border-radius:8px;
+    padding:6px 10px;
+    display:flex;
+    gap:6px;
+    align-items:flex-start;
+}
+.coin-effect-left { min-width:0; width:26px; display:flex; flex-direction:column; align-items:center; gap:2px; }
+.coin-index-icon { width:22px; height:22px; object-fit:contain; }
+.coin-effect-left .coin-faces { display:none; }
+.coin-effect-text { flex:1; font-size:.9em; line-height:1.45; white-space:pre-line; margin:0; }
+
+/* 자동 스크롤 상세뷰 */
+#detail-view.auto-scroll {
+    overflow:hidden !important;
+}
+#detail-view .detail-scroll-wrapper {
+    position:relative;
+    will-change:transform;
+    transition:none;
+}
+#detail-view.auto-scroll .detail-scroll-wrapper::-webkit-scrollbar {
+    display:none;
+}
+/* ===================== E.G.O 상세 레이아웃 (Safe Padding 버전) ===================== */
+:root {
+    --ego-left-width:300px;
+    --ego-layout-gap:24px;
+    --ego-block-gap:20px;
+    --ego-version-block-width:340px;
+    --ego-extra-right-two:0px;
+    --ego-extra-right-one:0px;
+    --ego-safe-pad-x:10px;
+    --ego-safe-pad-bottom:10px;
+}
+#detail-view { box-sizing:border-box; overflow:hidden; padding:0; background-color:#2c2c2c; }
+#detail-view.auto-scroll { overflow:hidden !important; }
+#detail-view.ego-wide .detail-info-bottom.ego-wide-layout {
+    padding-left:var(--ego-safe-pad-x);
+    padding-right:var(--ego-safe-pad-x);
+    padding-bottom:var(--ego-safe-pad-bottom);
+    box-sizing:border-box;
+}
+#detail-view.ego-wide.two-version {
+    width:calc(
+        var(--ego-left-width) + var(--ego-layout-gap)
+        + var(--ego-version-block-width)*2 + var(--ego-block-gap)
+        + (var(--ego-safe-pad-x) * 2)
+    );
+}
+#detail-view.ego-wide.one-version {
+    width:calc(
+        var(--ego-left-width) + var(--ego-layout-gap)
+        + var(--ego-version-block-width)
+        + (var(--ego-safe-pad-x) * 2)
+    );
+}
+#detail-view.ego-wide .ego-layout {
+    display:flex;
+    flex-wrap:nowrap;
+    gap:var(--ego-layout-gap);
+    align-items:flex-start;
+    box-sizing:border-box;
+}
+#detail-view.ego-wide .ego-left {
+    flex:0 0 var(--ego-left-width);
+    max-width:var(--ego-left-width);
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+}
+#detail-view.ego-wide.two-version .ego-right.two {
+    display:flex;
+    flex-wrap:nowrap;
+    gap:var(--ego-block-gap);
+    flex:0 0 calc(var(--ego-version-block-width)*2 + var(--ego-block-gap));
+    max-width:calc(var(--ego-version-block-width)*2 + var(--ego-block-gap));
+}
+#detail-view.ego-wide.one-version .ego-right.one {
+    display:flex;
+    flex-wrap:nowrap;
+    gap:0;
+    flex:0 0 var(--ego-version-block-width);
+    max-width:var(--ego-version-block-width);
+}
+#detail-view.ego-wide .ego-version-block {
+    width:var(--ego-version-block-width);
+    flex:0 0 var(--ego-version-block-width);
+    max-width:var(--ego-version-block-width);
+    box-sizing:border-box;
+}
+#detail-view .ego-right.two .ego-version-block,
+#detail-view .ego-right.one .ego-version-block {
+    flex:0 0 var(--ego-version-block-width) !important;
+    min-width:var(--ego-version-block-width) !important;
+}
+#detail-view.ego-wide .ego-version-meta {
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:10px;
+    margin-bottom:14px;
+}
+#detail-view.ego-wide .ego-version-meta .meta-item-coins {
+    grid-column:1 / -1;
+}
+
+/* 코인 효과: 인덱스 숨김(no-index) 라인 스타일 */
+.coin-effect-card.no-index {
+    padding-left:10px;
+    display:flex;
+}
+.coin-effect-card.no-index .coin-effect-left { display:none; }
+.coin-effect-card.no-index .coin-effect-text {}
+
+/* ===== 캡쳐 전용 (오프스크린) 래퍼 기본 스타일 ===== */
+#deck-capture-wrapper {
+    font-family:sans-serif;
+}
+#deck-capture-wrapper .capture-title {
+    font-size:32px;
+    font-weight:700;
+    margin:0 0 20px 0;
+    padding:0 5px;
+    letter-spacing:.5px;
+}
+#deck-capture-wrapper .deck-grid {
+    background:#fff;
+    overflow:visible;
+    height:auto;
+}
+</style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <div class="deck-list-header">
+                <h2>덱 목록</h2>
+                <div class="header-actions">
+                    <button id="export-decks-btn" title="덱 목록 내보내기"><i class="fa-solid fa-upload"></i></button>
+                    <button id="import-decks-btn" title="덱 목록 불러오기"><i class="fa-solid fa-download"></i></button>
+                </div>
+            </div>
+            <div id="deck-list-wrapper">
+                <div id="deck-list"></div>
+                <button id="add-deck-btn">+ 새 덱 추가</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="deck-header">
+                <input type="text" id="deck-name-input" placeholder="덱 이름을 입력하세요">
+
+                <!-- NEW: 단일 덱 내보내기 / 불러오기 / 캡쳐 아이콘 -->
+                <div class="mid-icon-bar">
+                    <button id="export-current-btn" title="현재 덱 내보내기 (코드)"><i class="fa-solid fa-upload"></i></button>
+                    <button id="import-current-btn" title="현재 덱 불러오기 (코드로 덮어쓰기)"><i class="fa-solid fa-download"></i></button>
+                    <button id="capture-deck-btn" title="현재 덱 캡쳐 (이미지 저장)"><i class="fa-solid fa-upload"></i></button>
+                </div>
+
+                <div class="filter-bar" id="ban-filter-bar">
+                    <span class="ban-label">금지 목록</span>
+                    <button type="button" class="ban-btn" id="ban-dup-btn" data-filter="dup" data-active="false">
+                        다른 덱에서 사용중인 인격
+                    </button>
+                    <button type="button" class="ban-btn" id="ban-collabo-btn" data-filter="collabo" data-active="false">
+                        콜라보 한정
+                    </button>
+                    <button type="button" class="ban-btn" id="ban-walpurgis-btn" data-filter="walpurgis" data-active="false">
+                        발푸밤
+                    </button>
+                    <button type="button" class="ban-btn" id="ban-prevseason-btn" data-filter="prevseason" data-active="false">
+                        직전 시즌 출시
+                    </button>
+                </div>
+            </header>
+            
+            <div id="deck-grid" class="deck-grid"></div>
+
+            <div id="skill-summary" class="skill-summary"></div>
+            <div id="defense-summary" class="defense-summary"></div>
+        </main>
+    </div>
+    
+    <div id="selection-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modal-title">선택</h3>
+            <div id="selection-grid"></div>
+        </div>
+    </div>
+    <div id="detail-view"></div>
+
+    <div id="io-modal" class="modal-overlay">
+        <div id="io-modal-content" class="modal-content"></div>
+    </div>
+
+    <!-- html2canvas for capture -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <script>
+    /* ===== NEW: 현재 시즌 상수 ===== */
+    const CURRENT_SEASON = 6; // 필요시 숫자 변경
+
+    const TIER_ICONS = {
+        '1': '기타/등급_1성.png',
+        '2': '기타/등급_2성.png',
+        '3': '기타/등급_3성.png'
+    };
+
+    const EGO_TIER_LABELS = {
+        'ZAYIN': '기타/에고_ZAYIN.png',
+        'TETH':  '기타/에고_TETH.png',
+        'HE':    '기타/에고_HE.png',
+        'WAW':   '기타/에고_WAW.png',
+        'ALEPH': '기타/에고_ALEPH.png'
+    };
+
+    const SKILL_TYPE_ICONS = {
+        slash:  '기타/공격_참격.png',
+        pierce: '기타/공격_관통.png',
+        blunt:  '기타/공격_타격.png'
+    };
+
+    const COIN_FACE_ICONS = {
+        head:    '기타/코인_앞면.png',
+        tail:    '기타/코인_뒷면.png',
+        unbhead: '기타/코인_앞면_파불코.png',
+        unbtail: '기타/코인_뒷면_파불코.png'
+    };
+
+    const COIN_INDEX_ICONS = {
+        1: '기타/코인_1.png',
+        2: '기타/코인_2.png',
+        3: '기타/코인_3.png',
+        4: '기타/코인_4.png',
+        5: '기타/코인_5.png',
+        6: '기타/코인_6.png',
+        7: '기타/코인_7.png',
+        8: '기타/코인_8.png',
+        9: '기타/코인_9.png',
+        10: '기타/코인_10.png'
+    };
+
+    const SIN_ATTRIBUTES = {
+        wrath:    { name: '분노', icon: '기타/자원_분노.png'},
+        lust:     { name: '색욕', icon: '기타/자원_색욕.png'},
+        sloth:    { name: '나태', icon: '기타/자원_나태.png'},
+        gluttony: { name: '탐식', icon: '기타/자원_탐식.png'},
+        gloom:    { name: '우울', icon: '기타/자원_우울.png'},
+        pride:    { name: '오만', icon: '기타/자원_오만.png'},
+        envy:     { name: '질투', icon: '기타/자원_질투.png'},
+    };
+
+    const DEFENSE_ICONS = {
+        guard: {
+            wrath:   '기타/수비_분노.png',
+            lust:    '기타/수비_색욕.png',
+            sloth:   '기타/수비_나태.png',
+            gluttony:'기타/수비_탐식.png',
+            gloom:   '기타/수비_우울.png',
+            pride:   '기타/수비_오만.png',
+            envy:    '기타/수비_질투.png',
+            colorless:'기타/수비_무색.png'
+        },
+        evade: {
+            wrath:   '기타/회피_분노.png',
+            lust:    '기타/회피_색욕.png',
+            sloth:   '기타/회피_나태.png',
+            gluttony:'기타/회피_탐식.png',
+            gloom:   '기타/회피_우울.png',
+            pride:   '기타/회피_오만.png',
+            envy:    '기타/회피_질투.png',
+            colorless:'기타/회피_무색.png'
+        },
+        counter: {
+            wrath:   '기타/반격_분노.png',
+            lust:    '기타/반격_색욕.png',
+            sloth:   '기타/반격_나태.png',
+            gluttony:'기타/반격_탐식.png',
+            gloom:   '기타/반격_우울.png',
+            pride:   '기타/반격_오만.png',
+            envy:    '기타/반격_질투.png',
+            colorless:'기타/반격_무색.png'
+        }
+    };
+
+    /* ===== SLOT_CONFIG (일부 season 예시 추가) ===== */
+    const SLOT_CONFIG = [
+        {
+            characterName: '이상',
+            defaultIcon: '기타/수감자_이상.png',
+            personalities: [
+                {
+                    id: 'yi_sang_001',
+                    name: 'LCB 수감자',
+                    season: 'normal',
+                    image: '수감자/인격/이상/LCB_수감자/프로필.png',
+                    tier: '1',
+                    skills: ['gloom', 'gloom', 'gloom', 'envy', 'envy', 'sloth'],
+                    defense: { type: 'guard', sin: 'gloom' },
+                    details: {
+                        fullImage: '수감자/인격/이상/LCB_수감자/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/LCB_수감자/1스킬.png', 
+                            '수감자/인격/이상/LCB_수감자/2스킬.png', 
+                            '수감자/인격/이상/LCB_수감자/3스킬.png', 
+                            '수감자/인격/이상/LCB_수감자/수비스킬.png'
+                        ],
+                        skillTypes: ['slash', 'pierce', 'slash'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_우울.png',
+                                condition: 'X4 공명',
+                                name: '정보전달',
+                                effect: '조작 패널에서 자신의 뒤에 있는 아군 2명에게 피해량 증가 1 부여',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_우울.png',
+                                condition: 'X4 보유',
+                                name: '정보중화',
+                                effect: '정신력이 가장 낮은 아군 1명 이번 턴에 정신력이 감소한 경우 턴 종료 시 정신력 10 회복'
+                            }
+                        ],
+                        keywords: ['침잠']
+                    }
+                },
+                {
+                    id: 'yi_sang_002',
+                    name: '남부 세븐 협회 6과',
+                    season: 'normal',
+                    tier: '2',
+                    image: '수감자/인격/이상/남부_세븐_협회_6과/프로필.png',
+                    skills: ['gloom', 'gloom', 'gloom', 'gluttony', 'gluttony', 'sloth'],
+                    defense: { type: 'guard', sin: 'gluttony' },
+                    details: {
+                        fullImage: '수감자/인격/이상/남부_세븐_협회_6과/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/남부_세븐_협회_6과/1스킬.png', 
+                            '수감자/인격/이상/남부_세븐_협회_6과/2스킬.png', 
+                            '수감자/인격/이상/남부_세븐_협회_6과/3스킬.png', 
+                            '수감자/인격/이상/남부_세븐_협회_6과/수비스킬.png'
+                        ],
+                        skillTypes: ['pierce', 'pierce', 'blunt'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X4 공명',
+                                name: '관찰',
+                                effect: '합 진행 시 대상의 합 위력 -2',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X3 공명',
+                                name: '분석',
+                                effect: '최대 체력이 가장 높은 아군 1명 합 진행 시 합 위력 +1'
+                            }
+                        ],
+                        keywords: ['파열', '관통']
+                    }
+                },
+                {
+                    id: 'yi_sang_003',
+                    name: '검계 살수',
+                    tier: '3',
+                    image: '수감자/인격/이상/검계_살수/프로필.png',
+                    skills: ['pride', 'pride', 'pride', 'wrath', 'wrath', 'envy'],
+                    defense: { type: 'counter', sin: 'pride' },
+                    details: {
+                        fullImage: '수감자/인격/이상/검계_살수/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/검계_살수/1스킬.png', 
+                            '수감자/인격/이상/검계_살수/2스킬.png', 
+                            '수감자/인격/이상/검계_살수/3스킬.png', 
+                            '수감자/인격/이상/검계_살수/수비스킬.png'
+                        ],
+                        skillTypes: ['slash', 'slash', 'slash', 'slash'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_오만.png',
+                                condition: 'X4 보유',
+                                name: '냉정',
+                                effect: '합 승리 시 호흡 횟수 1 증가<br>호흡 횟수 5당 코인 위력 +1 (최대 3)',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_오만.png',
+                                condition: 'X3 보유',
+                                name: '사사',
+                                effect: '정신력이 가장 높은 아군 1명 스킬의 효과로 얻는 호흡 횟수 +1'
+                            }
+                        ],
+                        keywords: ['호흡']
+                    }
+                },
+                {
+                    id: 'yi_sang_004',
+                    name: '개화 E.G.O::동백',
+                    season: 2,
+                    tier: '3',
+                    image: '수감자/인격/이상/개화_E.G.O_동백/프로필.png',
+                    skills: ['gluttony', 'gluttony', 'gluttony', 'sloth', 'sloth', 'pride'],
+                    defense: { type: 'evade', sin: 'sloth' },
+                    details: {
+                        fullImage: '수감자/인격/이상/개화_E.G.O_동백/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/개화_E.G.O_동백/1스킬.png', 
+                            '수감자/인격/이상/개화_E.G.O_동백/2스킬.png', 
+                            '수감자/인격/이상/개화_E.G.O_동백/3스킬.png', 
+                            '수감자/인격/이상/개화_E.G.O_동백/수비스킬.png'
+                        ],
+                        skillTypes: ['pierce', 'blunt', 'pierce'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_나태.png',
+                                condition: 'X4 보유',
+                                name: '만개',
+                                effect: '2명 이상을 공격할 때 피해량 +30%',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_나태.png',
+                                condition: 'X3 공명',
+                                name: '알싸한 봄바람',
+                                effect: '정신력이 가장 낮은 아군 1명이 2명 이상을 공격할 때 피해량 +10%'
+                            }
+                        ],
+                        keywords: ['진동', '침잠']
+                    }
+                },
+                {
+                    id: 'yi_sang_005',
+                    name: '어금니 사무소 해결사',
+                    season: 2,
+                    tier: '2',
+                    image: '수감자/인격/이상/어금니_사무소_해결사/프로필.png',
+                    skills: ['lust', 'lust', 'lust', 'sloth', 'sloth', 'wrath'],
+                    defense: { type: 'guard', sin: 'sloth' },
+                    details: {
+                        fullImage: '수감자/인격/이상/어금니_사무소_해결사/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/어금니_사무소_해결사/1스킬.png', 
+                            '수감자/인격/이상/어금니_사무소_해결사/2스킬.png', 
+                            '수감자/인격/이상/어금니_사무소_해결사/3스킬.png', 
+                            '수감자/인격/이상/어금니_사무소_해결사/수비스킬.png'
+                        ],
+                        skillTypes: ['pierce', 'blunt', 'blunt'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_나태.png',
+                                condition: 'X3 보유',
+                                name: '이럴 때 일수록...',
+                                effect: '적에게 진동 폭발 시 입히는 흐트러짐 손상 4 당 방어 레벨 감소 1 부여 (턴마다 적 1명당 최대 5)',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_나태.png',
+                                condition: 'X3 보유',
+                                name: '벌려진 일 수습',
+                                effect: '최대 체력이 가장 낮은 아군 1명이 적에게 진동 폭발 시 입히는 흐트러짐 손상 4 당 다음 턴에 방어 레벨 감소 1 부여 (턴마다 적 1명당 최대 3)'
+                            }
+                        ],
+                        keywords: ['진동']
+                    }
+                },
+                {
+                    id: 'yi_sang_006',
+                    name: 'W사 3등급 정리 요원',
+                    season: 'normal',
+                    tier: '3',
+                    image: '수감자/인격/이상/W사_3등급_정리_요원/프로필.png',
+                    skills: ['sloth', 'sloth', 'sloth', 'gluttony', 'gluttony', 'gloom'],
+                    defense: { type: 'evade', sin: 'gloom' },
+                    details: {
+                        fullImage: '수감자/인격/이상/W사_3등급_정리_요원/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/W사_3등급_정리_요원/1스킬.png', 
+                            '수감자/인격/이상/W사_3등급_정리_요원/2스킬.png', 
+                            '수감자/인격/이상/W사_3등급_정리_요원/3스킬.png', 
+                            '수감자/인격/이상/W사_3등급_정리_요원/수비스킬.png'
+                        ],
+                        skillTypes: ['slash', 'pierce', 'pierce'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X3 보유',
+                                name: '비워낸 생각',
+                                effect: '- 턴 종료 시 자신의 충전 횟수 5 당 다음 턴에 신속 1을 얻음. (최대 3)<br>- 자신이 스킬로 충전 횟수를 소모할 때, 현재 체력 비율이 가장 낮은 아군 1명에게 충전 역장 3 부여',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X4 보유',
+                                name: '정리 시범 교육',
+                                effect: '충전 횟수가 가장 높은 아군 1명이 파열이 있는 대상에게 가하는 피해량이 대상의 파열 위력에 비례하여 증가 (파열 1당 1.5%. 최대 15%)'
+                            }
+                        ],
+                        keywords: ['파열', '충전']
+                    }
+                },
+                {
+                    id: 'yi_sang_007',
+                    name: '피쿼드호 일등 항해사',
+                    season: 3,
+                    tier: '2',
+                    image: '수감자/인격/이상/피쿼드호_일등_항해사/프로필.png',
+                    skills: ['pride', 'pride', 'pride', 'envy', 'envy', 'gluttony'],
+                    defense: { type: 'evade', sin: 'pride' },
+                    details: {
+                        fullImage: '수감자/인격/이상/피쿼드호_일등_항해사/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/피쿼드호_일등_항해사/1스킬.png', 
+                            '수감자/인격/이상/피쿼드호_일등_항해사/2스킬.png', 
+                            '수감자/인격/이상/피쿼드호_일등_항해사/3스킬.png', 
+                            '수감자/인격/이상/피쿼드호_일등_항해사/수비스킬.png'
+                        ],
+                        skillTypes: ['pierce', 'pierce', 'pierce'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_오만.png',
+                                condition: 'X4 보유',
+                                name: '일등 항해사의 작살',
+                                effect: '크리티컬 적중 시 스킬로 부여하는 출혈 위력 +2 (턴 당 최대 6회)',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_오만.png',
+                                condition: 'X4 보유',
+                                name: '일등 항해사의 노련함',
+                                effect: '호흡을 가장 많이 보유한 아군 1명이 크리티컬 적중 시 스킬로 부여하는 출혈 위력 +2 (턴 당 최대 6회)'
+                            }
+                        ],
+                        keywords: ['출혈', '호흡']
+                    }
+                },
+                {
+                    id: 'yi_sang_008',
+                    name: '남부 디에치 협회 4과',
+                    season: 'normal',
+                    tier: '2',
+                    image: '수감자/인격/이상/남부_디에치_협회_4과/프로필.png',
+                    skills: ['gluttony', 'gluttony', 'gluttony', 'lust', 'lust', 'sloth'],
+                    defense: { type: 'guard', sin: 'sloth' },
+                    details: {
+                        fullImage: '수감자/인격/이상/남부_디에치_협회_4과/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/남부_디에치_협회_4과/1스킬.png', 
+                            '수감자/인격/이상/남부_디에치_협회_4과/2스킬.png', 
+                            '수감자/인격/이상/남부_디에치_협회_4과/3스킬.png', 
+                            '수감자/인격/이상/남부_디에치_협회_4과/수비스킬.png'
+                        ],
+                        skillTypes: ['pierce', 'blunt', 'blunt'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_나태.png',
+                                condition: 'X3 보유',
+                                name: '가라앉는 지식',
+                                effect: '피격 시 공격자에게 침잠 1 부여. 보호막이 있는 동안 피격 시 침잠 1 추가 부여 (최대 4회)',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_나태.png',
+                                condition: 'X4 보유',
+                                name: '반복 지식',
+                                effect: '속도가 가장 빠른 아군 1명이 스킬을 버릴 때, 해당 캐릭터 최대 체력의 (5 × 버린 스킬의 등급)% 만큼 보호막을 얻음 (턴 당 최대 2회)'
+                            }
+                        ],
+                        keywords: ['침잠']
+                    }
+                },
+                {
+                    id: 'yi_sang_009',
+                    name: '약지 점묘파 스튜던트',
+                    season: 'normal',
+                    tier: '3',
+                    image: '수감자/인격/이상/약지_점묘파_스튜던트/프로필.png',
+                    skills: ['gloom', 'gloom', 'gloom', 'lust', 'lust', 'sloth'],
+                    defense: { type: 'guard', sin: 'lust' },
+                    details: {
+                        fullImage: '수감자/인격/이상/약지_점묘파_스튜던트/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/약지_점묘파_스튜던트/1스킬.png', 
+                            '수감자/인격/이상/약지_점묘파_스튜던트/2스킬.png', 
+                            '수감자/인격/이상/약지_점묘파_스튜던트/3스킬.png', 
+                            '수감자/인격/이상/약지_점묘파_스튜던트/수비스킬.png'
+                        ],
+                        skillTypes: ['pierce', 'pierce', 'pierce'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_색욕.png',
+                                condition: 'X4 보유',
+                                name: '혈점묘파',
+                                effect: '이 인격은 출혈을 부여하는 인격으로만 취급됨.<br>랜덤으로 화상, 출혈, 진동, 파열, 침잠을 부여하는 스킬이 이 효과로 인해서 해당 키워드를 부여하는 스킬로 취급되지 않음.'
+                            },
+                            {
+                                conditionImage: '기타/자원_색욕.png',
+                                condition: 'X4 보유',
+                                name: '과제평가',
+                                effect: '- 적중시 대상에게 출혈이 4 이상 있으면 정신력 2 회복<br>- 대상이 보유한 부정적인 효과 1개당 정신력 1 추가 회복. (최대 3)<br>- 이 효과로 정신력 회복 시 자신의 정신력이 최대면 다음 턴에 공격 레벨 증가 2 얻음<br>(턴 당 패시브 최대 발동 횟수 : 4회)'
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_색욕.png',
+                                condition: 'X4 보유',
+                                name: '미학견습',
+                                effect: '- 정신력이 가장 낮은 아군이 공격 적중시 대상이 보유한 부정적인 효과 1개당 정신력 2 회복 (최대 6)<br>- 대상에게 출혈이 있으면 3 추가 회복<br>(턴 당 패시브 최대 발동 횟수 : 2회)'
+                            }
+                        ],
+                        keywords: ['출혈']
+                    }
+                },
+                {
+                    id: 'yi_sang_010',
+                    name: '로보토미 E.G.O::엄숙한 애도',
+                    season: 'walpurgis',
+                    tier: '3',
+                    image: '수감자/인격/이상/로보토미_E.G.O_엄숙한_애도/프로필.png',
+                    skills: ['pride', 'pride', 'pride', 'gloom', 'gloom', 'sloth'],
+                    defense: { type: 'guard', sin: 'gloom' },
+                    details: {
+                        fullImage: '수감자/인격/이상/로보토미_E.G.O_엄숙한_애도/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/로보토미_E.G.O_엄숙한_애도/1스킬.png', 
+                            '수감자/인격/이상/로보토미_E.G.O_엄숙한_애도/2스킬.png', 
+                            '수감자/인격/이상/로보토미_E.G.O_엄숙한_애도/3스킬.png', 
+                            '수감자/인격/이상/로보토미_E.G.O_엄숙한_애도/수비스킬.png'
+                        ],
+                        skillTypes: ['pierce', 'pierce', 'pierce'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_우울.png',
+                                condition: 'X3 공명',
+                                name: '죽어가는나비를본다.',
+                                effect: '전투 시작 시 산나비·죽은나비를 각각 10씩 보유함<br><br>산나비·죽은나비를 소모할 때, 해당 효과의 산나비(위력)와 죽은나비(횟수)를 무작위로 소모<br><br>나비를 부여할 때, 해당 코인에서 소모한 산나비·죽은나비에 따라 부여<br>- 산나비를 소모했으면, 소모한 값만큼 산나비를 부여<br>- 죽은나비를 소모했으면, 소모한 값만큼 죽은나비를 부여<br>스킬 사용 중 산나비·죽은나비가 부족하면, 다음 코인을 모두 취소하고 재장전<br><br>재장전을 하거나 산나비·죽은나비를 얻을 때, 현재 정신력에 따라 얻는 나비가 정해짐<br>- 정신력이 0 이상이면, 30% 확률로 산나비를, 70% 확률로 죽은나비를 얻음<br>- 정신력이 0 미만이면, 70% 확률로 산나비를, 30% 확률로 죽은나비를 얻음<br>- 확률은 각 탄환마다 개별적으로 적용됨'
+                            },
+                            {
+                                conditionImage: '기타/자원_우울.png',
+                                condition: 'X3 공명',
+                                name: '쏘아라.쏘으리로다.',
+                                effect: '공격 종료 시 자신의 스킬에 의해 대상이 사망했으면, 재장전<br>산나비·죽은나비를 얻으면, 다음 턴에 신속 2 얻음 (턴 당 1회)'
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_우울.png',
+                                condition: 'X6 보유',
+                                name: '구원의 손',
+                                effect: '아군의 스킬 적중 시 대상의 침잠을 2 소모하여 나비 1 부여 (턴 당 3회)'
+                            }
+                        ],
+                        keywords: ['침잠']
+                    }
+                },
+                {
+                    id: 'yi_sang_011',
+                    name: 'LCE E.G.O::초롱',
+                    season: 5,
+                    tier: '2',
+                    image: '수감자/인격/이상/LCE_E.G.O_초롱/프로필.png',
+                    skills: ['sloth', 'sloth', 'sloth', 'envy', 'envy', 'gluttony'],
+                    defense: { type: 'counter', sin: 'gluttony' },
+                    details: {
+                        fullImage: '수감자/인격/이상/LCE_E.G.O_초롱/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/LCE_E.G.O_초롱/1스킬.png', 
+                            '수감자/인격/이상/LCE_E.G.O_초롱/2스킬.png', 
+                            '수감자/인격/이상/LCE_E.G.O_초롱/3스킬.png', 
+                            '수감자/인격/이상/LCE_E.G.O_초롱/수비스킬.png'
+                        ],
+                        skillTypes: ['blunt', 'pierce', 'blunt', 'blunt'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X3 보유',
+                                name: '외형 또한 이전 L사의 E.G.O에 비해, 환상체와 가깝게 추출할 수 있소',
+                                effect: '사망 시 자신을 가장 마지막으로 공격한 대상에게 파열 5, 파열 횟수 3을 부여하고, 가장 부족한 속성 E.G.O 자원 4종을 2개씩 얻음<br>- 공격자가 없거나 아군에게 사망한 경우, 현재 파열 횟수가 가장 적은 적에게 파열 5, 파열 횟수 3 부여<br>- 자신이 미끼 요정 상태인 경우, 이 효과로 부여하는 파열 위력이 2배로 적용됨'
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X5 보유',
+                                name: 'E.G.O가 붕괴될 때 거름과 같이 분해되오',
+                                effect: '현재 체력이 가장 낮은 아군 1명이 사망 시 가장 부족한 속성의 E.G.O 자원 2종을 2개씩 얻음'
+                            }
+                        ],
+                        keywords: ['침잠']
+                    }
+                },
+                {
+                    id: 'yi_sang_012',
+                    name: '남부 리우 협회 3과',
+                    season: 'normal',
+                    tier: '3',
+                    image: '수감자/인격/이상/남부_리우_협회_3과/프로필.png',
+                    skills: ['sloth', 'sloth', 'sloth', 'wrath', 'wrath', 'envy'],
+                    defense: { type: 'counter', sin: 'wrath' },
+                    details: {
+                        fullImage: '수감자/인격/이상/남부_리우_협회_3과/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/남부_리우_협회_3과/1스킬.png', 
+                            '수감자/인격/이상/남부_리우_협회_3과/2스킬.png', 
+                            '수감자/인격/이상/남부_리우_협회_3과/3스킬.png', 
+                            '수감자/인격/이상/남부_리우_협회_3과/수비스킬.png'
+                        ],
+                        skillTypes: ['slash', 'slash', 'slash', 'slash'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_분노.png',
+                                condition: 'X4 보유',
+                                name: '내면의 열혈',
+                                effect: '턴 종료 시 현재 정신력이 가장 낮은 아군 1명의 정신력을 5 + (최대 공명 수)만큼 회복시킴. (최대 10) (자신 또는 패닉, E.G.O 침식 상태인 아군 제외)<br>회복 대상이 화상 위력이나 횟수를 부여하는 기본 스킬을 가지고 있으면, 정신력 5 추가 회복<br>분노 공명 4 이상이면, 회복 대상 1명 추가',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_분노.png',
+                                condition: 'X3 공명',
+                                name: '리우 방진',
+                                effect: '- 정신력이 가장 낮은 아군 2명이 이번 턴에 정신력이 감소한 경우 턴 종료 시 정신력 5 회복<br>회복 대상이 화상 위력이나 횟수를 부여하는 기본 스킬을 가지고 있으면, 대신 5 ~ 10 회복'
+                            }
+                        ],
+                        keywords: ['화상']
+                    }
+                },
+                {
+                    id: 'yi_sang_013',
+                    name: 'N사 E.G.O::흉탄',
+                    season: 6,
+                    tier: '3',
+                    image: '수감자/인격/이상/N사_E.G.O_흉탄/프로필.png',
+                    skills: ['wrath', 'wrath', 'wrath', 'lust', 'lust', 'pride'],
+                    defense: { type: 'counter', sin: 'pride' },
+                    details: {
+                        fullImage: '수감자/인격/이상/N사_E.G.O_흉탄/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/N사_E.G.O_흉탄/1스킬.png', 
+                            '수감자/인격/이상/N사_E.G.O_흉탄/2스킬.png', 
+                            '수감자/인격/이상/N사_E.G.O_흉탄/3스킬.png', 
+                            '수감자/인격/이상/N사_E.G.O_흉탄/수비스킬.png'
+                        ],
+                        skillTypes: ['blunt', 'pierce', 'pierce', 'pierce'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_오만.png',
+                                condition: 'X6 보유',
+                                name: '휘발된 추억',
+                                effect: '턴 종료 시 자신의 찢어진 추억을 전부 제거하고 다음 턴에 제거한 수치만큼 찢어진 추억을 얻음',
+                            },
+                            {
+                                conditionImage: '기타/자원_오만.png',
+                                condition: 'X6 보유',
+                                name: '흉탄',
+                                effect: '전투 중 자신이 아군을 사망시켰다면 다음 턴 동안 흉탄을 얻음<br>(자신의 E.G.O 침식 및 아군 공격 포함)<br>자신의 E.G.O 흉탄을 사용하여, 찢어진 추억이 소모되면, 턴 종료 시 소모한 만큼 다음 턴에 찢어진 추억을 얻음',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_오만.png',
+                                condition: 'X4 공명',
+                                name: '대상 지정',
+                                effect: '속도가 가장 느린 아군이 아군을 공격했다면, 공격 종료 시, 다음 턴에 피해량 증가 1 얻음(턴 당 최대 2).<br>- 이때, 아군이 사망했으면, 위 효과를 대신하여 이번 전투 동안 피해량 증가 1 얻음(스테이지 및 인격당 최대 2).<br>- 위 효과들로 얻는 피해량 증가는 최대 2까지만 얻어짐.'
+                            }
+                        ],
+                        keywords: ['출혈', '호흡']
+                    }
+                },
+                {
+                    id: 'yi_sang_014',
+                    name: '흑수 - 오 필두',
+                    season: 6,
+                    tier: '3',
+                    image: '수감자/인격/이상/흑수_오_필두/프로필.png',
+                    skills: ['sloth', 'sloth', 'sloth', 'envy', 'envy', 'gluttony'],
+                    defense: { type: 'guard', sin: 'gluttony' },
+                    details: {
+                        fullImage: '수감자/인격/이상/흑수_오_필두/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/흑수_오_필두/1스킬.png', 
+                            '수감자/인격/이상/흑수_오_필두/2스킬.png', 
+                            '수감자/인격/이상/흑수_오_필두/3스킬.png', 
+                            '수감자/인격/이상/흑수_오_필두/수비스킬.png'
+                        ],
+                        skillTypes: ['slash', 'slash', 'slash'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X5 보유',
+                                name: '구마지심 [拘馬之心]',
+                                effect: '홍원 군주 홍루와 존명 발동 시, 홍원 군주 홍루가 흑수환염[黑獸丸染]으로 아래 효과 얻음<br>- 기본 스킬의 마지막 코인 적중 시, 진동 폭발 1회 (턴 당 1회)<br><br>전투 인원에 가주 후보 이스마엘이 있다면, 아래 효과 적용<br>- 가주 후보 이스마엘이 스킬 효과로 파열 또는 파열 횟수 부여 시 호흡 위력 3 얻음 (턴 당 2회, E.G.O 스킬에는 적용되지 않음)<br>- 턴 시작 시 가주 후보 이스마엘에게 공격 위력 증가 1 부여. 이스마엘의 호흡 위력이 10 이상이면, 공격 위력 증가를 1 추가 부여<br>- &#39;흑풍마각월참&#39; 사용 후 가주 후보 이스마엘이 적춘 스킬로 원호 공격함 (턴 당 1회)'
+                            },
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X5 보유',
+                                name: '필두선봉',
+                                effect: '호령 부여 시 이번 턴과 다음 턴에 공격 레벨 증가 3 얻음<br>(해당 패시브로 이미 공격 레벨 증가를 얻었으면, 다음 턴에만 얻음)'
+                            },
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X5 보유',
+                                name: '흑풍마각 [黑風馬脚]',
+                                effect: '아래의 조건 만족 시 적진 주파 1 얻음<br>- 공격 시작 시 대상보다 속도가 2 이상 높을 때<br>- 자신의 스킬로 진동 폭발 효과 2회 발동시 (E.G.O 스킬 포함)<br>- 각력【오】를 보유 중인 상태로 합 승리 시<br>※ 적진 주파는 턴 당 최대 3까지 얻을 수 있으며, &#39;흑풍마각월참&#39; 스킬로는 얻을 수 없음<br><br>자신에게 보호막이 있을 때, 방어 레벨이 (보호막 수치 / 10)만큼 증가 (최대 5, 소수점 버림)'
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_탐식.png',
+                                condition: 'X4 보유',
+                                name: '검은 갑각이 살을 째고 돋아 날 지키리',
+                                effect: '최대 체력이 가장 높은 아군 1명에게 아래 효과 적용<br>- 전투 시작 시 방어 레벨이 (해당 캐릭터의 이전 턴과 이번 턴 속도 차이 × 2)만큼 증가 (최대 5. 이전 턴에 전투 인원이 아니었다면, 해당 캐릭터의 기본 속도 최솟값으로 계산)<br>- 전투 시작 시 현재 체력이 최대 체력의 50% 미만이고, 이전 턴과 이번 턴 속도 차이가 3 이상이면, 체력 50 회복 (전투 당 1회)'
+                            }
+                        ],
+                        keywords: ['진동', '파열']
+                    }
+                },
+            ],
+            egos: [
+                [ 
+                    {
+                        id:'yi_sang_ego_001',
+                        name:'오감도',
+                        season: 'normal',
+                        image:'수감자/에고/이상/오감도/일러스트.png',
+                        slotImage:'수감자/에고/이상/오감도/프로필.png',
+                        egoDetails:{
+                            fullImage:'수감자/에고/이상/오감도/일러스트.png',
+                            cost:['wrath','sloth','sloth','sloth'],
+                            passive:
+                                {
+                                    name:'침묵',
+                                    effect:'피격 시 다음 턴에 속박 3을 얻고, 대상을 약점, 취약인 속성으로 공격 시 피해량 +20% (턴당 1회 발동)' 
+                                },
+                            keywords:[],
+                            awakening:{
+                                sanityCost:10,
+                                attackType:'pierce',
+                                sins:['sloth'],
+                                weight:1,
+                                coinFaces:['head'],
+                                coins:[
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 공격 위력 감소 2 부여\n[적중시] 모든 아군에게 다음 턴에 신속 3 부여\n[적중시] 다음 턴에 속박 2 부여'
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        id:'yi_sang_ego_006',
+                        name:'지난 날',
+                        season: '4',
+                        image:'수감자/에고/이상/지난_날/일러스트.png',
+                        slotImage:'수감자/에고/이상/지난_날/프로필.png',
+                        egoDetails:{
+                            fullImage:'수감자/에고/이상/지난_날/일러스트.png',
+                            cost:['sloth','sloth','sloth','gloom','gloom','gloom'],
+                            passive:
+                                {
+                                    name:'조각난 어제',
+                                    effect:'대상의 침잠 위력이 6 이상이면, 합 위력 +1\n대상의 침잠 횟수가 4 이상이면, 합 위력 +1' 
+                                },
+                            keywords:['침잠'],
+                            awakening:{
+                                sanityCost:15,
+                                attackType:'pierce',
+                                sins:['gloom'],
+                                weight:3,
+                                coinFaces:['head'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'[공격 종료시] 침잠 6 + (우울 공명 수 × 1.5)을 무작위로 공격 대상에게 나눠서 부여'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 대상에게 침잠이 6 이상이면 다음 턴에 속박 2 부여'
+                                    }
+                                ]
+                            },
+                            corrosion:{
+                                sanityCost:15,
+                                attackType:'blunt',
+                                sins:['gloom'],
+                                weight:3,
+                                coinFaces:['tail'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'[피아식별불가]\n무작위 대상 공격\n[공격 시작 전] 우울 공명 수가 3 이상이면 공격 가중치 +1\n[공격 시작 전] 우울 공명 수가 5 이상이면 공격 가중치 +1'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 침잠 2 부여. 다음 턴에 속박 2 부여\n[적중시] 대상의 침잠이 6 이상이면 다음 턴에 속박 2 부여'
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ], 
+                [
+                    {
+                        id:'yi_sang_ego_002',
+                        name:'4번째 성냥불',
+                        season: '1',
+                        image:'수감자/에고/이상/4번째_성냥불/일러스트.png',
+                        slotImage:'수감자/에고/이상/4번째_성냥불/프로필.png',
+                        egoDetails:{
+                            fullImage:'수감자/에고/이상/4번째_성냥불/일러스트.png',
+                            cost:['wrath','wrath','wrath','wrath','wrath','sloth','gluttony'],
+                            passive:
+                                {
+                                    name:'불티',
+                                    effect:'합 승리 시 대상에게 (분노 완전 공명 수/2)만큼 화상 부여\n(스킬당 1회)' 
+                                },
+                            keywords:['화상'],
+                            awakening:{
+                                sanityCost:20,
+                                attackType:'slash',
+                                sins:['wrath'],
+                                weight:5,
+                                coinFaces:['head'],
+                                coins:[
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 화상 4 부여\n[앞면 적중시] 화상 6 부여'
+                                    }
+                                ]
+                            },
+                            corrosion:{
+                                sanityCost:20,
+                                attackType:'slash',
+                                sins:['wrath'],
+                                weight:5,
+                                coinFaces:['tail'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'[피아식별불가]\n무작위 대상 공격'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 화상 4 부여\n[앞면 적중시] 화상 6 부여'
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        id:'yi_sang_ego_003',
+                        name:'소망석',
+                        season: 'normal',
+                        image:'수감자/에고/이상/소망석/일러스트.png',
+                        slotImage:'수감자/에고/이상/소망석/프로필.png',
+                        egoDetails:{
+                            fullImage:'수감자/에고/이상/소망석/일러스트.png',
+                            cost:['sloth','sloth','sloth','sloth','gloom'],
+                            passive:
+                                {
+                                    name:'돌하르방',
+                                    effect:'매 턴마다 타격 보호, 나태 보호 3을 얻음' 
+                                },
+                            keywords:['나태'],
+                            awakening:{
+                                sanityCost:20,
+                                attackType:'pierce',
+                                sins:['sloth'],
+                                weight:3,
+                                coinFaces:['head'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'가장 뒤에 있는 대상 공격 (일반 전투 한정)'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 나태 취약 2 부여\n[앞면 적중시] 마비 3 부여'
+                                    }
+                                ]
+                            },
+                            corrosion:{
+                                sanityCost:20,
+                                attackType:'blunt',
+                                sins:['sloth'],
+                                weight:3,
+                                coinFaces:['tail'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'[피아식별불가]\n무작위 대상 공격'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 나태 취약 1 부여\n[적중시] 마비 2 부여\n[앞면 적중시] 다음 턴에 속박 3 부여'
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                [
+                    {
+                        id:'yi_sang_ego_004',
+                        name:'차원찢개',
+                        season: 'normal',
+                        image:'수감자/에고/이상/차원찢개/일러스트.png',
+                        slotImage:'수감자/에고/이상/차원찢개/프로필.png',
+                        egoDetails:{
+                            fullImage:'수감자/에고/이상/차원찢개/일러스트.png',
+                            cost:['sloth','sloth','sloth','gluttony','gluttony','gluttony'],
+                            passive:
+                                {
+                                    name:'헤메이는 자',
+                                    effect:'턴 시작 시 이전 턴에 피해를 받지 않았으면, 자신의 충전 횟수 4 증가\n자신보다 속도가 느린 적에게 공격 적중 시 대상의 파열 횟수 1 증가 (턴 당 최대 3회)' 
+                                },
+                            keywords:['파열', '충전'],
+                            awakening:{
+                                sanityCost:25,
+                                attackType:'pierce',
+                                sins:['pride'],
+                                weight:1,
+                                coinFaces:['head'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'가장 뒤에 있는 적 공격 (일반 전투 한정)\n[공격 시작 전] 충전 횟수를 소모하고 소모한 만큼 피해량이 증가함 (최대 75%)'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 충전 횟수를 소모한 경우, 차원 균열 5 부여.\n[적중시] 피해량의 (대상의 파열x10)%만큼 오만 추가 피해를 주고, 파열 횟수 5 소모 (최대 100%)'
+                                    }
+                                ]
+                            },
+                            corrosion:{
+                                sanityCost:30,
+                                attackType:'pierce',
+                                sins:['pride'],
+                                weight:1,
+                                coinFaces:['tail'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'[피아식별불가]\n무작위 대상 공격\n[공격 시작 전] 충전 횟수를 소모하고 소모한 만큼 피해량이 증가함 (최대 75%)'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 충전 횟수를 소모한 경우, 차원 균열 5 부여.\n[적중시] 파열 6 부여\n[적중시] 피해량의 (대상의 파열x10)%만큼 오만 추가 피해를 주고, 파열 횟수 5 소모 (최대 100%)'
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                [
+                    {
+                        id:'yi_sang_ego_005',
+                        name:'여우비',
+                        season: '2',
+                        image:'수감자/에고/이상/여우비/일러스트.png',
+                        slotImage:'수감자/에고/이상/여우비/프로필.png',
+                        egoDetails:{
+                            fullImage:'수감자/에고/이상/여우비/일러스트.png',
+                            cost:['sloth','sloth','sloth','sloth','gluttony','gluttony','gloom','gloom','pride','pride'],
+                            passive:
+                                {
+                                    name:'비 갠 뒤 햇살',
+                                    effect:'턴 시작 시 모든 아군의 정신력 3 회복' 
+                                },
+                            keywords:['나태, 관통'],
+                            awakening:{
+                                sanityCost:35,
+                                attackType:'pierce',
+                                sins:['sloth'],
+                                weight:7,
+                                coinFaces:['head'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'[공격 시작 전] 이번 턴, 다음 턴 동안 모든 아군에게 나태 위력 증가 1, 나태 피해량 증가 2, 보호 3 부여'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[앞면 적중시] 자신의 정신력 15 회복'
+                                    }
+                                ]
+                            },
+                            corrosion:{
+                                sanityCost:35,
+                                attackType:'pierce',
+                                sins:['sloth'],
+                                weight:7,
+                                coinFaces:['tail'],
+                                coins:[
+                                    {
+                                        noIndex:true,
+                                        effect:'[피아식별불가]\n무작위 대상 공격\n[공격 시작 전] 이번 턴과 다음 2턴 동안 나태 위력 증가 2, 나태 피해량 증가 2를 얻음'
+                                    },
+                                    {
+                                        index:1,
+                                        effect:'[적중시] 이번 턴, 다음 턴 동안 나태 취약, 관통 취약 2 부여'
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                []
+            ]
+        },
+        ...Array(11).fill({
+            characterName: '파우스트',
+            defaultIcon: '기타/수감자_파우스트.png',
+            personalities: [
+                {
+                    id: 'yi_fau_012',
+                    name: '남부 리우 협회 3과',
+                    season: 'normal',
+                    tier: '3',
+                    image: '수감자/인격/이상/남부_리우_협회_3과/프로필.png',
+                    skills: ['sloth', 'sloth', 'sloth', 'wrath', 'wrath', 'envy'],
+                    defense: { type: 'counter', sin: 'wrath' },
+                    details: {
+                        fullImage: '수감자/인격/이상/남부_리우_협회_3과/일러스트.png',
+                        skillIcons: [
+                            '수감자/인격/이상/남부_리우_협회_3과/1스킬.png', 
+                            '수감자/인격/이상/남부_리우_협회_3과/2스킬.png', 
+                            '수감자/인격/이상/남부_리우_협회_3과/3스킬.png', 
+                            '수감자/인격/이상/남부_리우_협회_3과/수비스킬.png'
+                        ],
+                        skillTypes: ['slash', 'slash', 'slash', 'slash'],
+                        passives: [
+                            {
+                                conditionImage: '기타/자원_분노.png',
+                                condition: 'X4 보유',
+                                name: '내면의 열혈',
+                                effect: '턴 종료 시 현재 정신력이 가장 낮은 아군 1명의 정신력을 5 + (최대 공명 수)만큼 회복시킴. (최대 10) (자신 또는 패닉, E.G.O 침식 상태인 아군 제외)<br>회복 대상이 화상 위력이나 횟수를 부여하는 기본 스킬을 가지고 있으면, 정신력 5 추가 회복<br>분노 공명 4 이상이면, 회복 대상 1명 추가',
+                            }
+                        ],
+                        supportPassives: [
+                            {
+                                conditionImage: '기타/자원_분노.png',
+                                condition: 'X3 공명',
+                                name: '리우 방진',
+                                effect: '- 정신력이 가장 낮은 아군 2명이 이번 턴에 정신력이 감소한 경우 턴 종료 시 정신력 5 회복<br>회복 대상이 화상 위력이나 횟수를 부여하는 기본 스킬을 가지고 있으면, 대신 5 ~ 10 회복'
+                            }
+                        ],
+                        keywords: ['화상']
+                    }
+                },
+            ],
+            egos: []
+        })
+    ];
+
+    let decks = [];
+    let currentDeckId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const deckListEl = document.getElementById('deck-list');
+        const addDeckBtn = document.getElementById('add-deck-btn');
+        const deckNameInput = document.getElementById('deck-name-input');
+        const deckGridEl = document.getElementById('deck-grid');
+        const selectionModal = document.getElementById('selection-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const selectionGrid = document.getElementById('selection-grid');
+        const detailView = document.getElementById('detail-view');
+        const skillSummaryEl = document.getElementById('skill-summary');
+        const defenseSummaryEl = document.getElementById('defense-summary');
+        const exportBtn = document.getElementById('export-decks-btn');
+        const importBtn = document.getElementById('import-decks-btn');
+        const ioModal = document.getElementById('io-modal');
+        const ioModalContent = document.getElementById('io-modal-content');
+
+        /* NEW single deck buttons */
+        const exportCurrentBtn = document.getElementById('export-current-btn');
+        const importCurrentBtn = document.getElementById('import-current-btn');
+        const captureDeckBtn  = document.getElementById('capture-deck-btn');
+
+        let detailAutoScrollState = {
+            rafId: null,
+            delayTimer: null,
+            running: false
+        };
+
+        function stopDetailAutoScroll() {
+            if (detailAutoScrollState.rafId) {
+                cancelAnimationFrame(detailAutoScrollState.rafId);
+                detailAutoScrollState.rafId = null;
+            }
+            if (detailAutoScrollState.delayTimer) {
+                clearTimeout(detailAutoScrollState.delayTimer);
+                detailAutoScrollState.delayTimer = null;
+            }
+            detailAutoScrollState.running = false;
+        }
+
+        function startDetailAutoScroll(wrapperEl, extraHeight) {
+            const SPEED_PX_PER_SEC = 120;
+            const duration = (extraHeight / SPEED_PX_PER_SEC) * 1000;
+            const startTime = performance.now();
+            detailAutoScrollState.running = true;
+
+            function step(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const offset = extraHeight * progress;
+                wrapperEl.style.transform = `translateY(-${offset}px)`;
+                if (progress < 1 && detailAutoScrollState.running) {
+                    detailAutoScrollState.rafId = requestAnimationFrame(step);
+                } else {
+                    detailAutoScrollState.rafId = null;
+                    detailAutoScrollState.running = false;
+                }
+            }
+            detailAutoScrollState.rafId = requestAnimationFrame(step);
+        }
+
+        /* NEW: 필터 버튼들 */
+        const filterButtons = document.querySelectorAll('.ban-btn');
+
+        let draggedItemId = null;
+        let lastSelectionContext = null;
+
+        // UTF-8-safe Base64
+        const toBase64Utf8 = (str) =>
+            btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_, p1) => String.fromCharCode(parseInt(p1, 16))));
+        const fromBase64Utf8 = (b64) =>
+            decodeURIComponent(Array.prototype.map.call(atob(b64), c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
+        const serializeDecks = (obj) => toBase64Utf8(JSON.stringify(obj));
+        const deserializeDecks = (b64) => JSON.parse(fromBase64Utf8(b64));
+
+        /* NEW: 단일 덱 직렬화 함수 */
+        const serializeSingleDeck = (deckObj) => toBase64Utf8(JSON.stringify(deckObj));
+        const deserializeSingleDeck = (b64) => JSON.parse(fromBase64Utf8(b64));
+
+        const findItemById = (id) => {
+            if (!id) return null;
+            for (const slot of SLOT_CONFIG) {
+                const p = slot.personalities.find(p => p.id === id);
+                if (p) return p;
+                for (const egoPool of slot.egos) {
+                    if (!egoPool) continue;
+                    const e = egoPool.find(e => e.id === id);
+                    if (e) return e;
+                }
+            }
+            return null;
+        };
+
+        const closeModal = (modalElement) => {
+            modalElement.style.display = 'none';
+            hideDetail();
+        };
+
+        const hideDetail = () => {
+            stopDetailAutoScroll();
+            detailView.style.display = 'none';
+        };
+
+        const renderAll = () => { renderDeckList(); renderCurrentDeck(); };
+        const switchDeck = (deckId) => { currentDeckId = deckId; renderAll(); };
+        
+        const renderDeckList = () => {
+            deckListEl.innerHTML = '';
+            decks.forEach(deck => {
+                const item = document.createElement('div');
+                item.className = 'deck-item';
+                item.dataset.id = deck.id;
+                item.draggable = true;
+                if (deck.id === currentDeckId) item.classList.add('active');
+
+                item.addEventListener('click', () => switchDeck(deck.id));
+                item.addEventListener('dragstart', () => {
+                    draggedItemId = item.dataset.id;
+                    item.classList.add('dragging');
+                });
+                item.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    item.classList.add('drag-over');
+                });
+                item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    item.classList.remove('drag-over');
+                    document.querySelector('.dragging')?.classList.remove('dragging');
+                    const droppedOnItemId = item.dataset.id;
+                    if (draggedItemId === droppedOnItemId) return;
+                    const fromIndex = decks.findIndex(d => d.id == draggedItemId);
+                    const toIndex = decks.findIndex(d => d.id == droppedOnItemId);
+                    const [movedItem] = decks.splice(fromIndex, 1);
+                    decks.splice(toIndex, 0, movedItem);
+                    renderDeckList();
+                });
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'deck-item-name';
+                nameSpan.textContent = deck.name;
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-deck-btn';
+                deleteBtn.innerHTML = '&times;';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`'${deck.name}' 덱을 정말 삭제하시겠습니까?`)) {
+                        deleteDeck(deck.id);
+                    }
+                });
+                
+                item.appendChild(nameSpan);
+                item.appendChild(deleteBtn);
+                deckListEl.appendChild(item);
+            });
+        };
+
+        /* 필터 상태 헬퍼 */
+        const isFilterActive = (key) => {
+            const btn = document.querySelector(`.ban-btn[data-filter="${key}"]`);
+            return btn && btn.dataset.active === 'true';
+        };
+
+        const passesSeasonFilters = (item) => {
+            const hideCollabo = isFilterActive('collabo');
+            const hideWalpurgis = isFilterActive('walpurgis');
+            const hidePrevSeason = isFilterActive('prevseason');
+
+            const s = item?.season;
+
+            if (hideCollabo && s === 'collabo') return false;
+            if (hideWalpurgis && s === 'walpurgis') return false;
+            if (hidePrevSeason && typeof s === 'number' && s === (CURRENT_SEASON - 1)) return false;
+
+            return true;
+        };
+
+        const showDetail = (item, element) => {
+            function hasMeaningfulVersion(ver) {
+                if (!ver) return false;
+                if (Array.isArray(ver.coins) && ver.coins.length) return true;
+                if (Array.isArray(ver.coinFaces) && ver.coinFaces.length) return true;
+                if (ver.sanityCost != null) return true;
+                if (ver.attackType) return true;
+                if (ver.weight != null) return true;
+                return false;
+            }
+
+            const detailView = document.getElementById('detail-view');
+            const personalityDetails = item.details;
+            const egoDetails = item.egoDetails;
+            let cardHtml = '';
+
+            const escapeHtml = (str='') =>
+                str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+            const renderGroupedPassives = (passives, title) => {
+                if (!passives || !passives.length) return '';
+                const groups = new Map();
+                passives.forEach(p => {
+                    const cond = p.condition || 'N/A';
+                    const img  = p.conditionImage || '';
+                    const key  = img + '__' + cond;
+                    if (!groups.has(key)) groups.set(key, { cond, img, items: [] });
+                    groups.get(key).items.push({
+                        name: p.name || 'N/A',
+                        effect: p.effect || 'N/A'
+                    });
+                });
+                const groupsHtml = [...groups.values()].map(g => {
+                    const itemsHtml = g.items.map(it => `
+                        <div class="passive-block compact">
+                            <div class="passive-line"><strong>이름:</strong><span>${it.name}</span></div>
+                            <div class="passive-line"><strong>효과:</strong><span class="effect" style="white-space:pre-line;">${it.effect}</span></div>
+                        </div>
+                    `).join('<hr style="border-color:#444; margin:8px 0;">');
+                    return `
+                        <div class="passive-group">
+                            <div class="passive-line">
+                                <strong>조건:</strong>
+                                <span>${g.img ? `<img src="${g.img}" class="condition-icon">` : ''}${g.cond}</span>
+                            </div>
+                            <div class="passive-items">${itemsHtml}</div>
+                        </div>
+                    `;
+                }).join('<hr style="border-color:#555; margin:10px 0;">');
+
+                return `<div class="detail-section"><h5>${title}</h5>${groupsHtml}</div>`;
+            };
+
+            const buildCostHtml = (costArr=[]) => {
+                const counts = costArr.reduce((m,s)=>{m[s]=(m[s]||0)+1;return m;}, {});
+                return Object.entries(counts).map(([sin, c]) =>
+                    `<div class="ego-cost-item"><img src="${SIN_ATTRIBUTES[sin].icon}" alt="${sin}"><span>x${c}</span></div>`
+                ).join('');
+            };
+
+            /* ================== 인격 상세 ================== */
+            if (personalityDetails) {
+                const skillBlocks = (personalityDetails.skillIcons || []).map((icon, idx) => {
+                    const typeKey  = personalityDetails.skillTypes?.[idx];
+                    const typeIcon = typeKey ? SKILL_TYPE_ICONS[typeKey] : '';
+                    return `
+                        <div class="skill-with-type">
+                            <img class="skill-icon" src="${icon}" alt="skill${idx+1}">
+                            ${typeIcon ? `<img class="skill-type-badge" src="${typeIcon}" alt="${typeKey}">` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                cardHtml = `
+                    <div class="detail-illustration-top" style="background-image:url('${personalityDetails.fullImage}')"></div>
+                    <div class="detail-info-bottom personality">
+                        <div class="detail-card-header"><h4>${item.name}</h4></div>
+                        <div class="detail-section">
+                            <h5>스킬</h5>
+                            <div class="detail-skills-grid">${skillBlocks}</div>
+                        </div>
+                        ${renderGroupedPassives(personalityDetails.passives, '패시브')}
+                        ${renderGroupedPassives(personalityDetails.supportPassives, '서포트 패시브')}
+                        <div class="detail-section">
+                            <h5>키워드</h5>
+                            <div class="detail-keywords-list">
+                                ${(personalityDetails.keywords || []).map(k=>`<span>${k}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                detailView.classList.remove('ego-wide','one-version','two-version');
+            }
+            /* ================== E.G.O 상세 ================== */
+            else if (egoDetails) {
+                const isNew = !!(egoDetails.awakening || egoDetails.corrosion);
+
+                if (!isNew) {
+                    const costHtml = buildCostHtml(egoDetails.cost);
+                    cardHtml = `
+                        <div class="detail-illustration-top ego-image" style="background-image:url('${egoDetails.fullImage}')"></div>
+                        <div class="detail-info-bottom">
+                            <div class="detail-card-header"><h4>${item.name}</h4></div>
+                            <div class="ego-stats-grid">
+                                <div class="ego-stat" style="grid-column:1/-1;">
+                                    <div class="label">사용 자원</div>
+                                    <div class="value ego-cost-list">${costHtml}</div>
+                                </div>
+                                <div class="ego-stat"><div class="label">소모 정신력</div><div class="value">${egoDetails.sanityCost ?? ''}</div></div>
+                                <div class="ego-stat"><div class="label">코인</div><div class="value">${egoDetails.coinCount ?? ''}</div></div>
+                                <div class="ego-stat"><div class="label">가중치</div><div class="value">${egoDetails.weight ?? ''}</div></div>
+                            </div>
+                            <div class="detail-section"><h5>코인 효과</h5><div class="ego-coineffect">${egoDetails.coinEffect || ''}</div></div>
+                            ${egoDetails.passive ? `
+                                <div class="detail-section">
+                                    <h5>패시브</h5>
+                                    <div class="passive-line"><strong>이름:</strong><span>${egoDetails.passive.name||''}</span></div>
+                                    <div class="passive-line"><strong>효과:</strong><span class="effect" style="white-space:pre-line;">${egoDetails.passive.effect||''}</span></div>
+                                </div>` : ''}
+                        </div>
+                    `;
+                    detailView.classList.remove('ego-wide','one-version','two-version');
+                } else {
+                    const hasAwakening = hasMeaningfulVersion(egoDetails.awakening);
+                    const hasCorrosion = hasMeaningfulVersion(egoDetails.corrosion);
+
+                    const passiveHtml = egoDetails.passive ? `
+                        <div class="ego-passive-box">
+                            <h5>패시브</h5>
+                            <div class="passive-line"><strong>이름:</strong><span>${egoDetails.passive.name||''}</span></div>
+                            <div class="passive-line"><strong>효과:</strong><span class="effect" style="white-space:pre-line;">${egoDetails.passive.effect||''}</span></div>
+                        </div>
+                    ` : '';
+
+                    const keywordsHtml = egoDetails.keywords?.length ? `
+                        <div class="ego-keywords-box">
+                            <h5>키워드</h5>
+                            <div class="ego-keywords-pills">
+                                ${egoDetails.keywords.map(k=>`<span>${k}</span>`).join('')}
+                            </div>
+                        </div>
+                    ` : '';
+
+                    const renderCoinSequence = (ver) => {
+                        if (Array.isArray(ver?.coinFaces) && ver.coinFaces.length) {
+                            return ver.coinFaces.map(f => {
+                                const src = COIN_FACE_ICONS[f] || COIN_FACE_ICONS.head;
+                                return `<img class="coin-face-icon" src="${src}" alt="${f}">`;
+                            }).join('');
+                        }
+                        if (ver && Array.isArray(ver.coins)) {
+                            return `<span style="font-weight:600;">${ver.coins.length} coin</span>`;
+                        }
+                        return '';
+                    };
+
+                    const renderCoinEffects = (ver) => {
+                        if (!ver?.coins) return '';
+                        return `
+                            <div class="ego-coin-effects">
+                                ${ver.coins.map((coin,i)=>{
+                                    const hideIndex = coin.noIndex === true || coin.index === null;
+                                    let idx = null;
+                                    if (!hideIndex) {
+                                        if (coin.index !== undefined && coin.index !== null) {
+                                            idx = coin.index;
+                                        } else {
+                                            idx = i + 1;
+                                        }
+                                    }
+                                    const idxIcon = (!hideIndex)
+                                        ? (coin.indexIcon || COIN_INDEX_ICONS[idx] || '')
+                                        : '';
+                                    const txt = (coin.effectLines
+                                            ? coin.effectLines.join('\\n')
+                                            : (coin.effect || '')
+                                        ).replace(/&/g,'&amp;')
+                                         .replace(/</g,'&lt;')
+                                         .replace(/>/g,'&gt;')
+                                         .replace(/\\n/g,'<br>');
+                                    const leftPart = hideIndex
+                                        ? ''
+                                        : `
+                                            <div class="coin-effect-left">
+                                                ${idxIcon
+                                                    ? `<img class="coin-index-icon" src="${idxIcon}" alt="코인${idx}">`
+                                                    : `<div style="color:#ccc;font-size:0.75em">${idx}</div>`}
+                                            </div>
+                                          `;
+                                    return `
+                                        <div class="coin-effect-card${hideIndex ? ' no-index' : ''}">
+                                            ${leftPart}
+                                            <div class="coin-effect-text">${txt}</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        `;
+                    };
+
+                    const renderVersionMeta = (ver) => {
+                        if (!hasMeaningfulVersion(ver)) return '';
+                        const sins = (Array.isArray(ver.sins)?ver.sins:[ver.sins]).filter(Boolean);
+                        const sinIcons = sins.map(s => SIN_ATTRIBUTES[s] ? `<img src="${SIN_ATTRIBUTES[s].icon}" alt="${s}">` : '').join('');
+                        const atkIcon = ver.attackType && SKILL_TYPE_ICONS[ver.attackType]
+                            ? `<img src="${SKILL_TYPE_ICONS[ver.attackType]}" alt="${ver.attackType}">`
+                            : (ver.attackType || '');
+                        return `
+                            <div class="ego-version-meta">
+                                <div class="meta-item"><span class="label">정신 소모량</span><span class="value">${ver.sanityCost ?? ''}</span></div>
+                                <div class="meta-item"><span class="label">공격 유형</span><span class="value">${atkIcon}</span></div>
+                                <div class="meta-item"><span class="label">죄악 속성</span><span class="value sin-icons">${sinIcons}</span></div>
+                                <div class="meta-item"><span class="label">가중치</span><span class="value">${ver.weight ?? ''}</span></div>
+                                <div class="meta-item meta-item-coins">
+                                    <span class="label">코인</span>
+                                    <span class="value coin-seq">${renderCoinSequence(ver)}</span>
+                                </div>
+                            </div>
+                        `;
+                    };
+
+                    const renderVersionBlock = (title, key) => {
+                        const ver = egoDetails[key];
+                        if (!hasMeaningfulVersion(ver)) return '';
+                        return `
+                            <div class="ego-version-block">
+                                <h5>${title}</h5>
+                                ${renderVersionMeta(ver)}
+                                ${renderCoinEffects(ver)}
+                            </div>
+                        `;
+                    };
+
+                    const costHtml = buildCostHtml(egoDetails.cost);
+                    const awakeningBlock = hasAwakening ? renderVersionBlock('각성 스킬','awakening') : '';
+                    const corrosionBlock = hasCorrosion ? renderVersionBlock('침식 스킬','corrosion') : '';
+                    const versionsStateClass = (hasAwakening && hasCorrosion) ? 'two' : 'one';
+
+                    cardHtml = `
+                        <div class="detail-illustration-top ego-image square" style="background-image:url('${egoDetails.fullImage}')"></div>
+                        <div class="detail-info-bottom ego-wide-layout">
+                            <div class="ego-layout">
+                                <div class="ego-left">
+                                    <div class="ego-name"><h4>${item.name}</h4></div>
+                                    <div class="ego-cost-box">
+                                        <h5>사용 자원</h5>
+                                        <div class="ego-cost-list">${costHtml}</div>
+                                    </div>
+                                    ${passiveHtml}
+                                    ${keywordsHtml}
+                                </div>
+                                <div class="ego-right ${versionsStateClass}">
+                                    ${awakeningBlock}
+                                    ${corrosionBlock}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    detailView.classList.add('ego-wide');
+                    detailView.classList.remove('one-version','two-version');
+                    if (hasAwakening && hasCorrosion) {
+                        detailView.classList.add('two-version');
+                    } else {
+                        detailView.classList.add('one-version');
+                    }
+                }
+            }
+            else if (item.detailImage) {
+                cardHtml = `
+                    <div class="detail-illustration-top" style="background-image:url('${item.detailImage}')"></div>
+                    <div class="detail-info-bottom">
+                        <div class="detail-card-header"><h4>${item.name}</h4></div>
+                    </div>
+                `;
+                detailView.classList.remove('ego-wide','one-version','two-version');
+            }
+            else {
+                cardHtml = `<div class="detail-info-bottom"><p>상세 정보가 없습니다.</p></div>`;
+                detailView.classList.remove('ego-wide','one-version','two-version');
+            }
+
+            stopDetailAutoScroll();
+            detailView.innerHTML = cardHtml;
+            detailView.style.display = 'block';
+            detailView.classList.remove('auto-scroll');
+            detailView.style.overflow = '';
+            detailView.style.maxHeight = '';
+            detailView.style.height = '';
+
+            const kids = Array.from(detailView.childNodes);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'detail-scroll-wrapper';
+            kids.forEach(k => wrapper.appendChild(k));
+            detailView.appendChild(wrapper);
+
+            const margin = 10;
+            const viewportH = window.innerHeight;
+            const MAX_AVAILABLE = Math.max(120, viewportH - 2*margin);
+            const contentHeight = wrapper.getBoundingClientRect().height;
+
+            if (contentHeight > MAX_AVAILABLE) {
+                detailView.classList.add('auto-scroll');
+                detailView.style.height = MAX_AVAILABLE + 'px';
+                detailView.style.maxHeight = MAX_AVAILABLE + 'px';
+                detailView.style.overflow = 'hidden';
+                const extra = contentHeight - MAX_AVAILABLE;
+                detailAutoScrollState.delayTimer = setTimeout(() => {
+                    startDetailAutoScroll(wrapper, extra);
+                }, 1500);
+            } else {
+                detailView.style.height = contentHeight + 'px';
+            }
+
+            const rect = element.getBoundingClientRect();
+            setTimeout(() => {
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                const sx = window.scrollX || document.documentElement.scrollLeft || 0;
+                const sy = window.scrollY || document.documentElement.scrollTop || 0;
+
+                let dRect = detailView.getBoundingClientRect();
+
+                let left = sx + rect.right + margin;
+                if (left + dRect.width > sx + vw - margin) {
+                    left = sx + rect.left - dRect.width - margin;
+                    if (left < sx + margin) left = sx + margin;
+                }
+
+                const anchorCenter = sy + rect.top + rect.height / 2;
+                let top = Math.round(anchorCenter - dRect.height / 2);
+                const minTop = sy + margin;
+                const maxTop = sy + vh - margin - dRect.height;
+                if (top < minTop) top = minTop;
+                if (top > maxTop) top = maxTop;
+
+                detailView.style.left = `${left}px`;
+                detailView.style.top  = `${top}px`;
+            }, 0);
+        };
+        
+        const openSelectionModal = (type, partyIndex, egoIndex = null) => {
+            selectionGrid.innerHTML = '';
+            lastSelectionContext = { type, partyIndex, egoIndex };
+            let onSelect, itemsToShow = [];
+
+            const deselectButton = document.createElement('div');
+            deselectButton.className = 'deselect-button';
+            deselectButton.textContent = '선택 해제';
+            deselectButton.addEventListener('click', () => {
+                if (type === 'character') {
+                    decks.find(d => d.id === currentDeckId).characters[partyIndex] = null;
+                } else {
+                    decks.find(d => d.id === currentDeckId).egos[partyIndex][egoIndex] = null;
+                }
+                closeModal(selectionModal);
+                renderCurrentDeck();
+            });
+            selectionGrid.appendChild(deselectButton);
+
+            const slotConfig = SLOT_CONFIG[partyIndex];
+            if (!slotConfig) return;
+
+            if (type === 'character') {
+                modalTitle.textContent = `${slotConfig.characterName} 인격 선택`;
+
+                const usedPersonalityIds = new Set();
+                if (isFilterActive('dup')) {
+                    decks.forEach(deck => {
+                        if (deck.id !== currentDeckId) {
+                            deck.characters.forEach(id => { if (id) usedPersonalityIds.add(id); });
+                        }
+                    });
+                }
+
+                itemsToShow = slotConfig.personalities
+                    .filter(p => !usedPersonalityIds.has(p.id))
+                    .filter(p => passesSeasonFilters(p));
+
+                onSelect = (id) => {
+                    decks.find(d => d.id === currentDeckId).characters[partyIndex] = id;
+                };
+            } else {
+                const egoTiers = ['ZAYIN', 'TETH', 'HE', 'WAW', 'ALEPH'];
+                modalTitle.textContent = `${slotConfig.characterName} - ${egoTiers[egoIndex]} 등급 에고 선택`;
+                const egoPool = slotConfig.egos[egoIndex] || [];
+                itemsToShow = egoPool.filter(e => passesSeasonFilters(e));
+                onSelect = (id) => {
+                    decks.find(d => d.id === currentDeckId).egos[partyIndex][egoIndex] = id;
+                };
+            }
+
+            itemsToShow.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'item-wrapper';
+
+                const img = document.createElement('img');
+                img.className = 'personality-select-image';
+                img.src = item.image;
+                img.alt = item.name;
+                img.addEventListener('click', () => {
+                    onSelect(item.id);
+                    closeModal(selectionModal);
+                    renderCurrentDeck();
+                });
+                img.addEventListener('mouseenter', (e) => showDetail(item, e.currentTarget));
+                img.addEventListener('mouseleave', hideDetail);
+
+                wrapper.appendChild(img);
+
+                if (type === 'character' && item.tier) {
+                    const tierIconUrl = TIER_ICONS[item.tier];
+                    if (tierIconUrl) {
+                        const tierIcon = document.createElement('img');
+                        tierIcon.className = 'tier-icon-modal';
+                        tierIcon.src = tierIconUrl;
+                        wrapper.appendChild(tierIcon);
+                    }
+                }
+                selectionGrid.appendChild(wrapper);
+            });
+
+            selectionModal.style.display = 'flex';
+        };
+
+        const renderSummaries = () => {
+            const deck = decks.find(d => d.id === currentDeckId);
+            const skillCounts = {};
+            for (const key in SIN_ATTRIBUTES) { skillCounts[key] = 0; }
+            const defenseSkills = [];
+
+            if (deck && deck.order.length > 0) {
+                deck.order.forEach(idx => {
+                    const p = findItemById(deck.characters[idx]);
+                    if (p && p.skills) {
+                        p.skills.forEach(attr => {
+                            if (skillCounts.hasOwnProperty(attr)) {
+                                skillCounts[attr]++;
+                            }
+                        });
+                        if (p.defense) {
+                            defenseSkills.push(p.defense);
+                        }
+                    }
+                });
+            }
+
+            skillSummaryEl.innerHTML = '';
+            for (const key in SIN_ATTRIBUTES) {
+                const attr = SIN_ATTRIBUTES[key];
+                const itemEl = document.createElement('div');
+                itemEl.className = 'skill-item';
+                itemEl.innerHTML = `<img src="${attr.icon}" alt="${attr.name}"><span>${skillCounts[key]}</span>`;
+                skillSummaryEl.appendChild(itemEl);
+            }
+
+            defenseSummaryEl.innerHTML = '';
+            defenseSkills.forEach(def => {
+                const iconUrl = DEFENSE_ICONS[def.type]?.[def.sin];
+                if (iconUrl) {
+                    const imgEl = document.createElement('img');
+                    imgEl.src = iconUrl;
+                    imgEl.alt = `${SIN_ATTRIBUTES[def.sin].name} ${def.type}`;
+                    defenseSummaryEl.appendChild(imgEl);
+                }
+            });
+        };
+
+        const renderCurrentDeck = () => {
+            const deck = decks.find(d => d.id === currentDeckId);
+            if (!deck) {
+                deckNameInput.value = '';
+                deckGridEl.innerHTML = '<p>덱을 선택하거나 새로 추가해주세요.</p>';
+                deckNameInput.disabled = true;
+                renderSummaries();
+                return;
+            }
+
+            deckNameInput.disabled = false;
+            deckNameInput.value = deck.name;
+            deckGridEl.innerHTML = '';
+
+            for (let i = 0; i < 12; i++) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'party-slot-wrapper';
+
+                const numBtn = document.createElement('button');
+                numBtn.className = 'numbering-btn';
+                const orderIndex = deck.order.indexOf(i);
+                if (orderIndex > -1) {
+                    numBtn.textContent = orderIndex + 1;
+                    numBtn.classList.add('numbered');
+                }
+                numBtn.addEventListener('click', () => toggleNumbering(i));
+
+                const partySlot = document.createElement('div');
+                partySlot.className = 'party-slot';
+
+                const p = findItemById(deck.characters[i]);
+
+                const nameSlot = document.createElement('div');
+                nameSlot.className = 'personality-name';
+                nameSlot.textContent = p ? p.name : '인격 선택';
+
+                const charSlot = document.createElement('div');
+                charSlot.className = 'character-slot';
+                if (p) {
+                    charSlot.style.backgroundImage = `url(${p.image})`;
+                    const tierIconUrl = TIER_ICONS[p.tier];
+                    if (tierIconUrl) {
+                        const tierIcon = document.createElement('img');
+                        tierIcon.className = 'tier-icon';
+                        tierIcon.src = tierIconUrl;
+                        charSlot.appendChild(tierIcon);
+                    }
+                } else {
+                    const slotConfig = SLOT_CONFIG[i];
+                    if (slotConfig && slotConfig.defaultIcon) {
+                        charSlot.style.backgroundImage = `url(${slotConfig.defaultIcon})`;
+                        charSlot.style.backgroundSize = 'auto 60%';
+                        charSlot.style.backgroundRepeat = 'no-repeat';
+                        charSlot.style.backgroundPosition = 'center';
+                    } else {
+                        charSlot.textContent = '+';
+                    }
+                }
+                charSlot.addEventListener('click', () => openSelectionModal('character', i));
+
+                const egoGrid = document.createElement('div');
+                egoGrid.className = 'ego-grid';
+                const egoTiers = ['ZAYIN', 'TETH', 'HE', 'WAW', 'ALEPH'];
+                for (let j = 0; j < 5; j++) {
+                    const egoSlot = document.createElement('div');
+                    egoSlot.className = 'ego-slot';
+                    const e = findItemById(deck.egos[i]?.[j]);
+                    if (e) {
+                        const slotImg = e.slotImage || e.image;
+                        egoSlot.style.backgroundImage = `url(${slotImg})`;
+                        egoSlot.classList.add('has-ego');
+                        egoSlot.textContent = '';
+                        const nameOverlay = document.createElement('div');
+                        nameOverlay.className = 'ego-slot-name';
+                        nameOverlay.textContent = e.name;
+                        if (e.name.length > 8) nameOverlay.classList.add('twoline');
+                        egoSlot.appendChild(nameOverlay);
+                    } else {
+                        const tierLabelImage = EGO_TIER_LABELS[egoTiers[j]];
+                        if (tierLabelImage) {
+                            egoSlot.style.backgroundImage = `url(${tierLabelImage})`;
+                            egoSlot.style.backgroundSize = 'auto 70%';
+                            egoSlot.style.backgroundRepeat = 'no-repeat';
+                            egoSlot.style.backgroundPosition = 'center';
+                            egoSlot.classList.remove('has-ego');
+                            egoSlot.textContent = '';
+                        } else {
+                            egoSlot.textContent = egoTiers[j];
+                        }
+                    }
+                    egoSlot.addEventListener('click', () => openSelectionModal('ego', i, j));
+                    egoGrid.appendChild(egoSlot);
+                }
+
+                partySlot.appendChild(nameSlot);
+                partySlot.appendChild(charSlot);
+                partySlot.appendChild(egoGrid);
+
+                wrapper.appendChild(numBtn);
+                wrapper.appendChild(partySlot);
+                deckGridEl.appendChild(wrapper);
+            }
+
+            renderSummaries();
+        };
+
+        const addDeck = () => {
+            const newDeck = {
+                id: Date.now(),
+                name: `새로운 덱 ${decks.length + 1}`,
+                characters: new Array(12).fill(null),
+                egos: new Array(12).fill(null).map(() => new Array(5).fill(null)),
+                order: []
+            };
+            decks.push(newDeck);
+            switchDeck(newDeck.id);
+        };
+
+        const deleteDeck = (deckId) => {
+            decks = decks.filter(deck => deck.id !== deckId);
+            if (currentDeckId === deckId) {
+                currentDeckId = decks.length > 0 ? decks[0].id : null;
+            }
+            renderAll();
+        };
+
+        const updateDeckName = (newName) => {
+            const deck = decks.find(d => d.id === currentDeckId);
+            if (deck) {
+                deck.name = newName;
+                renderDeckList();
+            }
+        };
+
+        const toggleNumbering = (partyIndex) => {
+            const deck = decks.find(d => d.id === currentDeckId);
+            if (!deck) return;
+            const orderIndex = deck.order.indexOf(partyIndex);
+            if (orderIndex > -1) {
+                deck.order.splice(orderIndex, 1);
+            } else {
+                deck.order.push(partyIndex);
+            }
+            renderCurrentDeck();
+        };
+        
+        const handleExport = () => {
+            try {
+                const dataStr = serializeDecks(decks);
+                ioModalContent.innerHTML = `
+                    <h3>덱 목록 내보내기</h3>
+                    <p>아래 코드를 복사하여 안전한 곳에 저장하세요.</p>
+                    <textarea readonly>${dataStr}</textarea>
+                    <div class="modal-actions">
+                        <button id="copy-btn">클립보드에 복사</button>
+                        <button class="secondary" id="close-io-btn">닫기</button>
+                    </div>`;
+                ioModal.style.display = 'flex';
+
+                const copyBtn = document.getElementById('copy-btn');
+                copyBtn.addEventListener('click', async (e) => {
+                    const textarea = ioModalContent.querySelector('textarea');
+                    const onSuccess = () => {
+                        e.target.textContent = '복사 완료!';
+                        setTimeout(() => e.target.textContent = '클립보드에 복사', 2000);
+                    };
+                    const fallbackCopy = () => {
+                        textarea.select();
+                        textarea.setSelectionRange(0, textarea.value.length);
+                        try {
+                            const ok = document.execCommand('copy');
+                            if (ok) onSuccess();
+                            else alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+                        } catch {
+                            alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+                        } finally {
+                            textarea.blur();
+                        }
+                    };
+                    try {
+                        if (navigator.clipboard?.writeText) {
+                            await navigator.clipboard.writeText(textarea.value);
+                            onSuccess();
+                        } else {
+                            fallbackCopy();
+                        }
+                    } catch {
+                        fallbackCopy();
+                    }
+                });
+
+                document.getElementById('close-io-btn')
+                    .addEventListener('click', () => closeModal(ioModal));
+            } catch (err) {
+                console.error('Export Error:', err);
+                alert('내보내기 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            }
+        };
+
+        const handleImport = () => {
+            ioModalContent.innerHTML = `
+                <h3>덱 목록 불러오기</h3>
+                <p>저장해 둔 코드를 아래에 붙여넣으세요.</p>
+                <textarea placeholder="이곳에 코드를 붙여넣으세요..."></textarea>
+                <div class="modal-actions">
+                    <button id="import-confirm-btn">불러오기</button>
+                    <button class="secondary" id="close-io-btn">닫기</button>
+                </div>`;
+            ioModal.style.display = 'flex';
+
+            document.getElementById('import-confirm-btn')
+                .addEventListener('click', () => {
+                    const textarea = ioModalContent.querySelector('textarea');
+                    const dataStr = textarea.value.trim();
+                    if (!dataStr) {
+                        alert('코드를 입력해주세요.');
+                        return;
+                    }
+                    try {
+                        const importedDecks = deserializeDecks(dataStr);
+                        if (!Array.isArray(importedDecks)) {
+                            throw new Error("Invalid data format");
+                        }
+                        if (confirm('현재 작업중인 모든 덱을 덮어쓰고 불러오시겠습니까?')) {
+                            decks = importedDecks;
+                            currentDeckId = decks.length > 0 ? decks[0].id : null;
+                            renderAll();
+                            closeModal(ioModal);
+                        }
+                    } catch (e) {
+                        alert('유효하지 않은 코드입니다. 다시 확인해주세요.');
+                        console.error("Import Error:", e);
+                    }
+                });
+
+            document.getElementById('close-io-btn')
+                .addEventListener('click', () => closeModal(ioModal));
+        };
+
+        /* NEW: 단일 덱 내보내기 */
+        const exportCurrentDeck = () => {
+            const deck = decks.find(d => d.id === currentDeckId);
+            if (!deck) {
+                alert('선택된 덱이 없습니다.');
+                return;
+            }
+            const clone = JSON.parse(JSON.stringify(deck));
+            const dataStr = serializeSingleDeck(clone);
+            ioModalContent.innerHTML = `
+                <h3>현재 덱 내보내기</h3>
+                <p>이 코드는 현재 보고 있는 덱 1개만을 포함합니다.</p>
+                <textarea readonly>${dataStr}</textarea>
+                <div class="modal-actions">
+                    <button id="copy-current-btn">복사</button>
+                    <button class="secondary" id="close-io-btn">닫기</button>
+                </div>`;
+            ioModal.style.display = 'flex';
+
+            document.getElementById('copy-current-btn').addEventListener('click', async (e) => {
+                const textarea = ioModalContent.querySelector('textarea');
+                const onSuccess = () => {
+                    e.target.textContent = '복사 완료!';
+                    setTimeout(() => e.target.textContent = '복사', 2000);
+                };
+                try {
+                    if (navigator.clipboard?.writeText) {
+                        await navigator.clipboard.writeText(textarea.value);
+                        onSuccess();
+                    } else {
+                        textarea.select();
+                        document.execCommand('copy');
+                        onSuccess();
+                    }
+                } catch {
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        onSuccess();
+                    } catch {
+                        alert('복사 실패. 수동으로 복사해주세요.');
+                    }
+                } finally {
+                    textarea.blur();
+                }
+            });
+
+            document.getElementById('close-io-btn')
+                .addEventListener('click', () => closeModal(ioModal));
+        };
+
+        /* NEW: 단일 덱 불러오기 (현재 덱 덮어쓰기) */
+        const importCurrentDeck = () => {
+            const deck = decks.find(d => d.id === currentDeckId);
+            if (!deck) {
+                alert('선택된 덱이 없습니다.');
+                return;
+            }
+            ioModalContent.innerHTML = `
+                <h3>현재 덱 불러오기</h3>
+                <p>아래에 단일 덱 코드를 붙여넣고 불러오면 현재 덱을 덮어씁니다.</p>
+                <textarea placeholder="단일 덱 코드 붙여넣기"></textarea>
+                <div class="modal-actions">
+                    <button id="import-one-confirm-btn">덮어쓰기</button>
+                    <button class="secondary" id="close-io-btn">취소</button>
+                </div>`;
+            ioModal.style.display = 'flex';
+
+            document.getElementById('import-one-confirm-btn').addEventListener('click', () => {
+                const textarea = ioModalContent.querySelector('textarea');
+                const dataStr = textarea.value.trim();
+                if (!dataStr) {
+                    alert('코드를 입력해주세요.');
+                    return;
+                }
+                try {
+                    const imported = deserializeSingleDeck(dataStr);
+                    if (typeof imported !== 'object' || !imported) throw new Error('invalid');
+                    if (!Array.isArray(imported.characters) || !Array.isArray(imported.egos)) {
+                        throw new Error('structure');
+                    }
+                    if (!confirm('현재 덱을 이 내용으로 덮어쓸까요?')) return;
+                    // 유지할 id
+                    const keepId = deck.id;
+                    imported.id = keepId;
+                    // 필수 필드 보정
+                    imported.name = imported.name || deck.name;
+                    imported.order = Array.isArray(imported.order) ? imported.order : [];
+                    decks[decks.findIndex(d=>d.id===keepId)] = imported;
+                    renderAll();
+                    closeModal(ioModal);
+                } catch (e) {
+                    alert('유효하지 않은 단일 덱 코드입니다.');
+                    console.error(e);
+                }
+            });
+
+            document.getElementById('close-io-btn').addEventListener('click', ()=> closeModal(ioModal));
+        };
+
+        /* NEW: 캡쳐 기능 */
+        async function urlToDataURL(absUrl){
+            const res = await fetch(absUrl, {mode:'cors'});
+            const blob = await res.blob();
+            return await new Promise((resolve,reject)=>{
+                const fr = new FileReader();
+                fr.onload = ()=>resolve(fr.result);
+                fr.onerror = reject;
+                fr.readAsDataURL(blob);
+            });
+        }
+
+        async function inlineExternalAssets(root){
+            // <img>
+            const imgTags = [...root.querySelectorAll('img')];
+            for (const img of imgTags){
+                if (!img.src) continue;
+                if (img.src.startsWith('data:')) continue;
+                try {
+                    const dataUrl = await urlToDataURL(img.src);
+                    img.setAttribute('crossorigin','anonymous');
+                    img.src = dataUrl;
+                } catch(e){
+                    console.warn('이미지 인라인 실패(img):', img.src, e);
+                }
+            }
+
+            // background-image
+            const all = [...root.querySelectorAll('*')];
+            const urlRegex = /url\((["']?)(.+?)\1\)/g;
+            for (const el of all){
+                const style = getComputedStyle(el);
+                const bg = style.backgroundImage;
+                if (!bg || bg === 'none') continue;
+
+                const matches = [...bg.matchAll(urlRegex)];
+                if (!matches.length) continue;
+                let newBg = bg;
+                for (const m of matches){
+                    let rawUrl = m[2];
+                    if (rawUrl.startsWith('data:')) continue;
+                    try {
+                        const abs = new URL(rawUrl, location.href).href;
+                        const dataUrl = await urlToDataURL(abs);
+                        newBg = newBg.replace(m[0], `url("${dataUrl}")`);
+                    } catch(e){
+                        console.warn('이미지 인라인 실패(bg):', rawUrl, e);
+                    }
+                }
+                el.style.backgroundImage = newBg;
+            }
+        }
+
+        async function captureDeckImage(){
+            const deck = decks.find(d => d.id === currentDeckId);
+            if (!deck){ alert('선택된 덱이 없습니다.'); return; }
+            if (typeof html2canvas === 'undefined'){
+                alert('html2canvas 로딩 실패'); return;
+            }
+
+            const CAPTURE_WIDTH = 1600;
+            renderCurrentDeck(); // 최신 상태 반영
+
+            const temp = document.createElement('div');
+            temp.id = 'deck-capture-wrapper';
+            temp.style.cssText = `position:fixed;left:-99999px;top:0;width:${CAPTURE_WIDTH}px;background:#fff;padding:30px 30px 40px;box-sizing:border-box;`;
+
+            const title = document.createElement('h1');
+            title.className = 'capture-title';
+            title.textContent = deck.name;
+            temp.appendChild(title);
+
+            const gridClone = deckGridEl.cloneNode(true);
+            gridClone.id = 'deck-grid-capture';
+            gridClone.style.overflow = 'visible';
+            gridClone.style.height = 'auto';
+            temp.appendChild(gridClone);
+
+            document.body.appendChild(temp);
+
+            try {
+                await inlineExternalAssets(temp);
+                const canvas = await html2canvas(temp, {
+                    backgroundColor:'#ffffff',
+                    width: CAPTURE_WIDTH,
+                    scrollX:0,
+                    scrollY:0,
+                    scale:1,
+                    useCORS:true,
+                    foreignObjectRendering:true,
+                    removeContainer:true,
+                    logging:false
+                });
+                const link = document.createElement('a');
+                const safeName = (deck.name||'deck').replace(/[\\/:*?"<>|]/g,'_');
+                link.download = `${safeName}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            } catch(err){
+                console.error('캡쳐 실패:', err);
+                alert('캡쳐 중 오류가 발생했습니다. (콘솔 참고)');
+            } finally {
+                temp.remove();
+            }
+        }
+
+        /* NEW: 필터 버튼 토글 로직 */
+        const toggleFilterBtn = (btn) => {
+            const active = btn.dataset.active === 'true';
+            btn.dataset.active = active ? 'false' : 'true';
+            const squareSpan = btn.querySelector('.square');
+            if (squareSpan) squareSpan.textContent = active ? '□' : '■';
+
+            if (selectionModal.style.display === 'flex' && lastSelectionContext) {
+                openSelectionModal(
+                    lastSelectionContext.type,
+                    lastSelectionContext.partyIndex,
+                    lastSelectionContext.egoIndex
+                );
+            }
+        };
+
+        filterButtons.forEach(btn => {
+            // 사각형 토글 표시용 span (요청 없었지만 시각적 구분 위해)
+            if (!btn.querySelector('.square')) {
+                const sq = document.createElement('span');
+                sq.className = 'square';
+                sq.textContent = '□';
+                btn.prepend(sq);
+            }
+            btn.addEventListener('click', () => toggleFilterBtn(btn));
+        });
+
+        // 이벤트 리스너
+        addDeckBtn.addEventListener('click', addDeck);
+        deckNameInput.addEventListener('input', (e) => updateDeckName(e.target.value));
+        selectionModal.addEventListener('click', (e) => {
+            if (e.target === selectionModal) closeModal(selectionModal);
+        });
+        exportBtn.addEventListener('click', handleExport);
+        importBtn.addEventListener('click', handleImport);
+        ioModal.addEventListener('click', (e) => {
+            if (e.target === ioModal) closeModal(ioModal);
+        });
+
+        // NEW: 단일 덱 버튼 이벤트
+        exportCurrentBtn.addEventListener('click', exportCurrentDeck);
+        importCurrentBtn.addEventListener('click', importCurrentDeck);
+        captureDeckBtn.addEventListener('click', captureDeckImage);
+
+        // 초기
+        addDeck();
+    });
+    </script>
+</body>
+</html>
