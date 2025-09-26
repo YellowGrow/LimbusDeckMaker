@@ -380,19 +380,36 @@ body {
     overflow:visible;
     height:auto;
 }
+/* 칼럼이 긴 텍스트 때문에 늘어나지 않도록 */
 .deck-grid {
     display:grid;
-    grid-template-columns:repeat(6, minmax(0,1fr)); /* 중요 */
+    grid-template-columns:repeat(6, minmax(0,1fr));  /* 핵심 */
+    gap:20px;
+    flex-grow:1;
+    overflow-y:auto;
+    padding:15px;
 }
 
+/* 자식이 수축 가능하도록 */
 .party-slot-wrapper,
 .party-slot,
 .personality-name {
-    min-width:0; /* 축소 허용 */
+    min-width:0;
 }
 
+/* 이름 영역: 한 줄 + 넘침 감지 (JS가 직접 잘라 넣음) */
 .personality-name {
+    height:30px;
+    background:#fff;
+    border-bottom:1px dashed #e0c5a3;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:.9em;
+    font-weight:bold;
+    padding:0 6px;
+    box-sizing:border-box;
     white-space:nowrap;
-    overflow:hidden;      /* 실제 잘려 넣을 때 시각적 클리핑 */
-    /* text-overflow:ellipsis; 는 JS가 ‘…’ 직접 붙이니 필수는 아님 */
+    overflow:hidden;
+    /* text-overflow:ellipsis;  // (JS가 '…' 직접 붙이므로 옵션) */
 }

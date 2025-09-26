@@ -5,23 +5,14 @@
 let decks = [];
 let currentDeckId = null;
 
-/* ========= 인격 이름 실제 문자열 자르기 유틸 =========
-   - 각 .personality-name 요소에 data-full 로 원문 저장
-   - 요소 폭에 맞춰 한 글자씩 줄여 ‘…’ 붙임
-   - (12칸 정도라 성능 영향 미미)
-===================================================== */
+/* ========= 인격 이름 실제 잘라 '…' 붙이기 유틸 ========= */
 function truncateTextToFit(el) {
     const original = el.getAttribute('data-full') || el.textContent;
     if (!el.getAttribute('data-full')) el.setAttribute('data-full', original);
 
-    // 전체로 복구 후 시작
-    el.textContent = original;
-
-    // 레이아웃이 아직 없다면 패스
-    if (!el.clientWidth) return;
-
-    // 넘치지 않으면 그대로
-    if (el.scrollWidth <= el.clientWidth) return;
+    el.textContent = original;                // 원본으로 초기화
+    if (!el.clientWidth) return;              // 레이아웃 미완성시 패스
+    if (el.scrollWidth <= el.clientWidth) return; // 넘치지 않으면 그대로
 
     let text = original;
     while (text.length > 0 && el.scrollWidth > el.clientWidth) {
@@ -33,12 +24,11 @@ function truncateTextToFit(el) {
 
 function applyPersonalityNameTruncation() {
     const nodes = document.querySelectorAll('.deck-grid .personality-name');
-    // 우선 원문 복구
+    // 원본 복구 후 다시 계산 (리사이즈/재렌더 대비)
     nodes.forEach(el => {
         const full = el.getAttribute('data-full');
         if (full) el.textContent = full;
     });
-    // 다시 자르기
     nodes.forEach(truncateTextToFit);
 }
 
@@ -195,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hideWalpurgis = isFilterActive('walpurgis');
         const hidePrevSeason = isFilterActive('prevseason');
         const s = item?.season;
-               if (hideCollabo && s === 'collabo') return false;
+        if (hideCollabo && s === 'collabo') return false;
         if (hideWalpurgis && s === 'walpurgis') return false;
         if (hidePrevSeason && typeof s === 'number' && s === (CURRENT_SEASON - 1)) return false;
         return true;
@@ -609,6 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCurrentDeck() {
+
         const deck = decks.find(d => d.id === currentDeckId);
         if (!deck) {
             deckNameInput.value = '';
@@ -643,7 +634,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const nameSlot = document.createElement('div');
             nameSlot.className = 'personality-name';
             nameSlot.textContent = p ? p.name : '인격 선택';
-            if (p) nameSlot.setAttribute('title', p.name); // 툴팁으로 원문 표시
 
             const charSlot = document.createElement('div');
             charSlot.className = 'character-slot';
@@ -714,7 +704,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderSummaries();
 
-        // 즉시 문자열 자르기 (캡쳐에도 반영되도록 requestAnimationFrame 제거)
+        // 이름 텍스트 실제 잘라 넣기 (레이아웃 계산 이후 실행 보장 위해 rAF)
         applyPersonalityNameTruncation();
     }
 
@@ -895,7 +885,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function importCurrentDeck() {
         const deck = decks.find(d => d.id === currentDeckId);
         if (!deck) {
-            alert('선택된 덱이 없습니다.';
+            alert('선택된 덱이 없습니다.');
             return;
         }
         ioModalContent.innerHTML = `
@@ -946,10 +936,8 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('캡쳐 라이브러리를 불러올 수 없습니다.');
             return;
         }
-        // 최신 렌더 & 자르기 반영
         renderCurrentDeck();
         applyPersonalityNameTruncation();
-
         const CAPTURE_WIDTH = 1600;
         const temp = document.createElement('div');
         temp.id = 'deck-capture-wrapper';
@@ -959,7 +947,7 @@ document.addEventListener('DOMContentLoaded', () => {
         title.textContent = deck.name;
         temp.appendChild(title);
 
-        const gridClone = deckGridEl.cloneNode(true); // 잘린 상태 그대로 복제
+        const gridClone = deckGridEl.cloneNode(true);
         gridClone.id = 'deck-grid-capture';
         gridClone.style.overflow = 'visible';
         gridClone.style.height = 'auto';
@@ -1011,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.prepend(sq);
         }
         btn.addEventListener('click', () => toggleFilterBtn(btn));
-    });
+    }); 
 
     // 이벤트 리스너
     addDeckBtn.addEventListener('click', addDeck);
@@ -1028,11 +1016,6 @@ document.addEventListener('DOMContentLoaded', () => {
     exportCurrentBtn.addEventListener('click', exportCurrentDeck);
     importCurrentBtn.addEventListener('click', importCurrentDeck);
     captureDeckBtn.addEventListener('click', captureDeckImage);
-
-    // 창 크기 변경 시 재계산 (선택)
-    window.addEventListener('resize', () => {
-        applyPersonalityNameTruncation();
-    });
 
     // 초기 덱 하나 생성
     addDeck();
