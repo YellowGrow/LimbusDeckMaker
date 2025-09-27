@@ -76,6 +76,20 @@
         <div id="io-modal-content" class="modal-content"></div>
     </div>
 
+    <div id="preload-overlay">
+      <div class="preload-box">
+        <h3>이미지 로딩 중...</h3>
+        <div class="bar-outer">
+          <div class="bar-inner" style="width:0%"></div>
+        </div>
+        <div class="preload-stats">
+          <span class="count">0 / 0</span>
+          <span class="phase">수집 중...</span>
+        </div>
+        <button id="preload-skip-btn" type="button">건너뛰기</button>
+      </div>
+    </div>
+
     <!-- html2canvas for capture -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
@@ -96,7 +110,11 @@
     <script src="js/오티스.js"></script>
     <script src="js/그레고르.js"></script>
 
-    <!-- 메인 앱 로직 -->
+    <!-- 이미지 선로딩 스크립트 -->
+    <script src="js/preload.js"></script>
+    <!-- 메인 앱 -->
     <script src="js/app.js"></script>
+
+
 </body>
 </html>
