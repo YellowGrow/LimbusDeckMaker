@@ -196,7 +196,7 @@
             if (aborted) break;
             const list = phases[i];
             // 현재 phase label
-            const label = (i===0? '핵심 썸네일' : '상세 일러');
+            const label = (i===0? '썸네일' : '전체 일러스트');
             await preloadImages(list,(loaded,total,url)=>{
                 updateProgress(loaded,total,label,i,totalPhases);
             });

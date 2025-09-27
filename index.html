@@ -76,17 +76,31 @@
         <div id="io-modal-content" class="modal-content"></div>
     </div>
 
-    <div id="preload-overlay">
+    <div id="preload-overlay" role="alert" aria-live="polite">
       <div class="preload-box">
-        <h3>이미지 로딩 중...</h3>
+        <div class="preload-header">
+          <div class="spinner" aria-hidden="true"></div>
+          <div class="preload-title-wrap">
+            <h3 class="preload-title">이미지 로딩 중...</h3>
+            <p class="preload-sub">
+              첫 방문이거나 캐시가 비어 있는 경우 시간이 다소 걸릴 수 있습니다.
+            </p>
+          </div>
+        </div>
+
         <div class="bar-outer">
           <div class="bar-inner" style="width:0%"></div>
         </div>
+
         <div class="preload-stats">
           <span class="count">0 / 0</span>
           <span class="phase">수집 중...</span>
         </div>
-        <button id="preload-skip-btn" type="button">건너뛰기</button>
+
+        <button id="preload-skip-btn" type="button" class="preload-skip-btn"
+                aria-label="이미지 선로딩 건너뛰기">
+          건너뛰기
+        </button>
       </div>
     </div>
 
