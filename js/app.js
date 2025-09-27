@@ -95,7 +95,7 @@ const KEYWORD_HIGHLIGHT_EXTRA_MAP = {
    - 여기에 적힌 문자열 전체 구간은 내부 키워드도 색칠 안 됨.
 */
 const HIGHLIGHT_EXCLUDE = [
-  "소수점 버림", "보호막", "산나비를", "죽은나비를 부", "죽은나비를 얻음", "나비(", "관찰", "광신도"
+  "소수점 버림", "보호막", "산나비를", "죽은나비를 부", "죽은나비를 얻음", "나비(", "관찰", "광신도", "취약인"
 ];
 
 /* -------- Bulk Spec 파서 -------- */
@@ -263,6 +263,43 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectionGrid = document.getElementById('selection-grid');
     const detailView = document.getElementById('detail-view');
     const skillSummaryEl = document.getElementById('skill-summary');
+    const summaryWrapper = document.getElementById('summary-wrapper');
+    const summaryToggle  = document.getElementById('summary-toggle');
+
+    function checkSummaryToggleVisibility() {
+        const small = (window.innerWidth <= 1250) || (window.innerHeight <= 820);
+        if (!small) {
+            summaryToggle.style.display = 'none';
+            if (summaryWrapper.classList.contains('collapsed')) {
+                summaryWrapper.classList.remove('collapsed');
+                summaryToggle.setAttribute('aria-expanded','true');
+                summaryToggle.querySelector('.txt').textContent = '자원 요약 접기';
+                const icon = summaryToggle.querySelector('i');
+                if (icon) icon.className = 'fa-solid fa-chevron-up';
+            }
+        } else {
+            summaryToggle.style.display = 'inline-flex';
+        }
+    }
+
+    summaryToggle.addEventListener('click', () => {
+        const isCollapsed = summaryWrapper.classList.toggle('collapsed');
+        if (isCollapsed) {
+            summaryToggle.setAttribute('aria-expanded','false');
+            summaryToggle.querySelector('.txt').textContent = '자원 요약 펼치기';
+            const icon = summaryToggle.querySelector('i');
+            if (icon) icon.className = 'fa-solid fa-chevron-down';
+        } else {
+            summaryToggle.setAttribute('aria-expanded','true');
+            summaryToggle.querySelector('.txt').textContent = '자원 요약 접기';
+            const icon = summaryToggle.querySelector('i');
+            if (icon) icon.className = 'fa-solid fa-chevron-up';
+        }
+    });
+
+    checkSummaryToggleVisibility();
+    window.addEventListener('resize', checkSummaryToggleVisibility);
+    
     const defenseSummaryEl = document.getElementById('defense-summary');
     const exportBtn = document.getElementById('export-decks-btn');
     const importBtn = document.getElementById('import-decks-btn');
@@ -411,6 +448,53 @@ document.addEventListener('DOMContentLoaded', () => {
         return true;
     };
 
+    // === NEW: 다중 조건 추출 헬퍼 ==========================================
+    /**
+     * 패시브 객체로부터 조건 쌍 배열을 추출.
+     * 지원:
+     *  - conditionImage / condition
+     *  - conditionImage2 / condition2, conditionImage3 / condition3 ... (번호 증가하며 연속 존재 시)
+     *  - conditions: [{image:'...', text:'...'}, ...]  (배열 방식)
+     * 리턴: [{image:'', text:''}, ...]
+     */
+    function extractConditionPairs(passive) {
+        const pairs = [];
+
+        // 1) 기본 1세트
+        if (passive.conditionImage || passive.condition) {
+            pairs.push({ image: passive.conditionImage || '', text: passive.condition || '' });
+        }
+
+        // 2) 번호 붙은 추가 세트
+        let idx = 2;
+        while (true) {
+            const imgKey = 'conditionImage' + idx;
+            const txtKey = 'condition' + idx;
+            if (!(imgKey in passive) && !(txtKey in passive)) break;
+            const imgVal = passive[imgKey];
+            const txtVal = passive[txtKey];
+            if (imgVal || txtVal) {
+                pairs.push({ image: imgVal || '', text: txtVal || '' });
+            }
+            idx++;
+        }
+
+        // 3) 배열 방식 지원 (있으면 이어붙임)
+        if (Array.isArray(passive.conditions)) {
+            passive.conditions.forEach(c => {
+                if (c && (c.image || c.text || c.condition)) {
+                    pairs.push({
+                        image: c.image || '',
+                        text: c.text != null ? c.text : (c.condition || '')
+                    });
+                }
+            });
+        }
+
+        // 아무 것도 없다면 빈 배열 (호환용)
+        return pairs;
+    }
+
     function showDetail(item, element) {
         function hasMeaningfulVersion(ver) {
             if (!ver) return false;
@@ -425,24 +509,40 @@ document.addEventListener('DOMContentLoaded', () => {
         const egoDetails = item.egoDetails;
         let cardHtml = '';
 
-        // 패시브 / 서포트 패시브 (효과만 하이라이트)
+        // === UPDATED FOR MULTI CONDITIONS =================================
         const renderGroupedPassives = (passives, title) => {
             if (!passives || !passives.length) return '';
             const groups = new Map();
+
             passives.forEach(p => {
-                const cond = p.condition || 'N/A';
-                const img  = p.conditionImage || '';
-                const key  = img + '__' + cond;
-                if (!groups.has(key)) groups.set(key, { cond, img, items: [] });
+                const condPairs = extractConditionPairs(p);
+                // condPairs가 없으면 빈 자리(N/A)
+                const key = condPairs.length
+                    ? condPairs.map(cp => (cp.image||'') + '|' + (cp.text||'')).join('__')
+                    : 'NO_COND';
+
+                if (!groups.has(key)) {
+                    groups.set(key, { condPairs, items: [] });
+                }
                 groups.get(key).items.push({
                     name: p.name || 'N/A',
                     effect: p.effect || 'N/A'
                 });
             });
+
             const groupsHtml = [...groups.values()].map(g => {
+                // 여러 조건칩 렌더
+                const condHtml = g.condPairs.length
+                    ? g.condPairs.map(cp => {
+                        const imgTag = cp.image ? `<img src="${cp.image}" class="condition-icon">` : '';
+                        const txt = escapeHtml(cp.text || '');
+                        return `<span class="cond-chip">${imgTag}${txt}</span>`;
+                    }).join('')
+                    : `<span class="cond-chip">${escapeHtml('N/A')}</span>`;
+
                 const itemsHtml = g.items.map(it => {
-                    const nameHtml   = escapeHtml(it.name);            // 이름은 색칠 X
-                    const effectHtml = highlightKeywords(it.effect);   // 효과만 색칠
+                    const nameHtml   = escapeHtml(it.name);
+                    const effectHtml = highlightKeywords(it.effect);
                     return `
                         <div class="passive-block compact">
                             <div class="passive-line"><strong>이름:</strong><span>${nameHtml}</span></div>
@@ -450,18 +550,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                 }).join('<hr style="border-color:#444; margin:8px 0;">');
+
                 return `
                     <div class="passive-group">
-                        <div class="passive-line">
+                        <div class="passive-line multi-condition-line">
                             <strong>조건:</strong>
-                            <span>${g.img ? `<img src="${g.img}" class="condition-icon">` : ''}${escapeHtml(g.cond)}</span>
+                            <span class="multi-conds">${condHtml}</span>
                         </div>
                         <div class="passive-items">${itemsHtml}</div>
                     </div>
                 `;
             }).join('<hr style="border-color:#555; margin:10px 0;">');
+
             return `<div class="detail-section"><h5>${title}</h5>${groupsHtml}</div>`;
         };
+        // ==================================================================
 
         const buildCostHtml = (costArr=[]) => {
             const counts = costArr.reduce((m,s)=>{m[s]=(m[s]||0)+1;return m;}, {});
@@ -533,7 +636,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return '';
             };
 
-            // 코인 효과 텍스트만 하이라이트
             const renderCoinEffects = (ver) => {
                 if (!ver?.coins) return '';
                 return `
