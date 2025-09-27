@@ -1135,12 +1135,19 @@ async function captureDeckImage() {
 ========================================================= */
 document.addEventListener('DOMContentLoaded', () => {
 
+    const ov = document.getElementById('preload-overlay');
+    if (ov && ov.parentElement !== document.body) {
+        document.body.appendChild(ov); // body 직계로 이동
+    }
+      
+
     function startApp() {
         // 기존 초기화 코드 (필터 버튼 바인딩, addDeck(), updateSummaryToggleVisibility() 등)
         // ...
         addDeck();
         updateSummaryToggleVisibility?.();
     }
+
 
     if (window.APP_PRELOAD_DONE) {
         startApp();
