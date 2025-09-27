@@ -1135,26 +1135,48 @@ async function captureDeckImage() {
 ========================================================= */
 document.addEventListener('DOMContentLoaded', () => {
 
-    const ov = document.getElementById('preload-overlay');
-    if (ov && ov.parentElement !== document.body) {
-        document.body.appendChild(ov); // body 직계로 이동
-    }
+    function startAppInternal(){
+          // 이미 한번 실행되었으면 중복 방지
+          if (startAppInternal._started) return;
+          startAppInternal._started = true;
+
+          // === 기존 초기화 코드 (필터 버튼 바인딩, 이벤트, addDeck 등) ===
+          // 아래 줄 예시: 당신 프로젝트의 초기화 로직을 그대로 옮겨 넣으세요.
+          addDeck();
+        updateSummaryToggleVisibility?.();
+
+          // summary 토글 강제 갱신 등
+          if (typeof updateSummaryToggleVisibility === 'function') {
+              updateSummaryToggleVisibility();
+          }
+      }
+
+      // 외부( preloader )에서 강제 호출 가능하도록
+      window.__FORCE_APP_START__ = startAppInternal;
+
+      // 이미 preload 끝났으면 즉시
+      if (window.APP_PRELOAD_DONE) {
+          startAppInternal();
+      } else {
+          // 이벤트 리스너
+          document.addEventListener('app-preload-ready', startAppInternal, { once:true });
+
+          // 폴백: 혹시 이벤트 놓치면 polling
+          let tries = 0;
+          (function poll(){
+              if (window.APP_PRELOAD_DONE) {
+                  startAppInternal();
+              } else if (tries < 120) { // 약 2초(16ms * 120) polling
+                  tries++;
+                  requestAnimationFrame(poll);
+              } else {
+                  console.warn('Preload event missed – forcing app start.');
+                  startAppInternal();
+              }
+          })();
+      }
       
 
-    function startApp() {
-        // 기존 초기화 코드 (필터 버튼 바인딩, addDeck(), updateSummaryToggleVisibility() 등)
-        // ...
-        addDeck();
-        updateSummaryToggleVisibility?.();
-    }
-
-
-    if (window.APP_PRELOAD_DONE) {
-        startApp();
-    } else {
-        // preload.js 완료 이벤트 대기
-        document.addEventListener('app-preload-finished', startApp, { once:true });
-    }
     // 주요 DOM
     deckGridEl = document.getElementById('deck-grid');
     summaryWrapper = document.getElementById('summary-wrapper');
