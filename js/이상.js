@@ -6,7 +6,7 @@ registerCharacter({
     defaultIcon: './기타/수감자_이상.png',
     personalities: [
         {
-            id: 'yi_sang_001',
+            id: 'yisang_001',
             name: 'LCB 수감자',
             season: 'normal',
             image: './수감자/인격/이상/LCB_수감자/프로필.png',
@@ -42,7 +42,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_002',
+            id: 'yisang_002',
             name: '남부 세븐 협회 6과',
             season: 'normal',
             tier: '2',
@@ -78,7 +78,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_003',
+            id: 'yisang_003',
             name: '검계 살수',
             season: 'normal',
             tier: '3',
@@ -114,7 +114,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_004',
+            id: 'yisang_004',
             name: '개화 E.G.O::동백',
             season: 2,
             tier: '3',
@@ -150,7 +150,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_005',
+            id: 'yisang_005',
             name: '어금니 사무소 해결사',
             season: 2,
             tier: '2',
@@ -186,7 +186,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_006',
+            id: 'yisang_006',
             name: 'W사 3등급 정리 요원',
             season: 'normal',
             tier: '3',
@@ -222,7 +222,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_007',
+            id: 'yisang_007',
             name: '피쿼드호 일등 항해사',
             season: 3,
             tier: '2',
@@ -258,7 +258,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_008',
+            id: 'yisang_008',
             name: '남부 디에치 협회 4과',
             season: 'normal',
             tier: '2',
@@ -294,7 +294,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_009',
+            id: 'yisang_009',
             name: '약지 점묘파 스튜던트',
             season: 'normal',
             tier: '3',
@@ -336,7 +336,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_010',
+            id: 'yisang_010',
             name: '로보토미 E.G.O::엄숙한 애도',
             season: 'walpurgis',
             tier: '3',
@@ -378,7 +378,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_011',
+            id: 'yisang_011',
             name: 'LCE E.G.O::초롱',
             season: 5,
             tier: '2',
@@ -414,7 +414,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_012',
+            id: 'yisang_012',
             name: '남부 리우 협회 3과',
             season: 'normal',
             tier: '3',
@@ -450,7 +450,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_013',
+            id: 'yisang_013',
             name: 'N사 E.G.O::흉탄',
             season: 6,
             tier: '3',
@@ -492,7 +492,7 @@ registerCharacter({
             }
         },
         {
-            id: 'yi_sang_014',
+            id: 'yisang_014',
             name: '흑수 - 오 필두',
             season: 6,
             tier: '3',
@@ -543,7 +543,7 @@ registerCharacter({
     egos: [
         [ 
             {
-                id:'yi_sang_ego_001',
+                id:'yisang_ego_001',
                 name:'오감도',
                 season: 'normal',
                 image:'./수감자/에고/이상/오감도/일러스트.png',
@@ -569,7 +569,7 @@ registerCharacter({
                 }
             },
             {
-                id:'yi_sang_ego_006',
+                id:'yisang_ego_006',
                 name:'지난 날',
                 season: '4',
                 image:'./수감자/에고/이상/지난_날/일러스트.png',
@@ -606,7 +606,7 @@ registerCharacter({
         ], 
         [
             {
-                id:'yi_sang_ego_002',
+                id:'yisang_ego_002',
                 name:'4번째 성냥불',
                 season: '1',
                 image:'./수감자/에고/이상/4번째_성냥불/일러스트.png',
@@ -640,7 +640,7 @@ registerCharacter({
                 }
             },
             {
-                id:'yi_sang_ego_003',
+                id:'yisang_ego_003',
                 name:'소망석',
                 season: 'normal',
                 image:'./수감자/에고/이상/소망석/일러스트.png',
@@ -677,7 +677,7 @@ registerCharacter({
         ],
         [
             {
-                id:'yi_sang_ego_004',
+                id:'yisang_ego_004',
                 name:'차원찢개',
                 season: 'normal',
                 image:'./수감자/에고/이상/차원찢개/일러스트.png',
@@ -712,7 +712,7 @@ registerCharacter({
                 }
             },
             {
-                id:'yi_sang_ego_007',
+                id:'yisang_ego_007',
                 name:'흉탄',
                 season: '5',
                 image:'./수감자/에고/이상/흉탄/일러스트.png',
@@ -751,7 +751,7 @@ registerCharacter({
         ],
         [
             {
-                id:'yi_sang_ego_005',
+                id:'yisang_ego_005',
                 name:'여우비',
                 season: '2',
                 image:'./수감자/에고/이상/여우비/일러스트.png',
