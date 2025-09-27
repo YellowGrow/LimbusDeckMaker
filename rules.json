@@ -1,0 +1,26 @@
+{
+  "rules_mode": "first-match",
+  "default_behavior": "convert",
+  "resize_mode": "fit",
+  "quality": 82,
+  "lossless": false,
+  "rules": [
+    { "pattern": "일러스트.png", "type": "exact", "size": "880x" },
+    { "pattern": "프로필.png", "type": "exact", "size": "1920x" },
+    { "pattern": "스킬1.png", "type": "exact", "size": "320xauto" },
+    { "pattern": "스킬2.png", "type": "exact", "size": "320xauto" },
+    { "pattern": "스킬3.png", "type": "exact", "size": "320xauto" },
+    { "pattern": "수비스킬.png", "type": "exact", "size": "320xauto" },
+    
+    // { "pattern": "수비_*.png", "type": "glob", "size": "320xauto" },   기타폴더임
+    // { "pattern": "반격_*.png", "type": "glob", "size": "320xauto" },
+    // { "pattern": "회피_*.png", "type": "glob", "size": "320xauto" },
+    // { "pattern": "코인_*.png", "type": "glob", "size": "320xauto" },
+    // { "pattern": "수감자_*.png", "type": "glob", "size": "320xauto" },
+    // { "pattern": "등급_*.png", "type": "glob", "size": "320xauto" },
+    // { "pattern": "공격_*.png", "type": "glob", "size": "320xauto" },
+    // { "pattern": "에고_*.png", "type": "glob", "size": "320xauto" },
+
+    // { "pattern": "일러스트.png", "type": "exact", "size": "880x" },  에고버전임 여긴프로필안건듬
+  ]
+}

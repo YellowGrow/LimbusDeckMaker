@@ -537,51 +537,160 @@ body {
 }
 .skill-summary { border-top:none; }
 
-/* === Preload Overlay Override (강제 적용 / 캐시 갱신 후에도 바로 반영) === */
+/* === Preload Overlay (Skip 제거 / 애니메이션 바 유지) === */
 #preload-overlay {
-    position:fixed !important;
-    top:0 !important; left:0 !important; right:0 !important; bottom:0 !important;
-    display:flex !important;
-    justify-content:center !important;
-    align-items:center !important;
-    background:linear-gradient(135deg,#1d1f23,#14161a 55%, #101114) !important;
-    z-index:99999 !important;
-    color:#e9f2ff !important;
+    position:fixed!important;
+    inset:0!important;
+    width:100vw;
+    height:100vh;
+    z-index:99999;
+    background:linear-gradient(135deg,#1d1f23,#14161a 55%,#101114);
+    display:flex!important;
+    justify-content:center!important;
+    align-items:center!important;
     font-family:sans-serif;
+    color:#e9f2ff;
+    -webkit-font-smoothing:antialiased;
 }
 
-#preload-overlay .preload-title { color:#f4f9ff !important; }
-#preload-overlay .preload-sub  { color:#c5d4e5 !important; }
-#preload-overlay .preload-stats { color:#d0dde9 !important; }
+#preload-overlay.hidden {
+    display:none!important;
+    opacity:0!important;
+    visibility:hidden!important;
+}
 
-#preload-overlay .spinner {
-    width:46px; height:46px;
+#preload-overlay .preload-box {
+    width:410px;
+    max-width:92%;
+    background:#262a30;
+    border:1px solid #39424d;
+    border-radius:18px;
+    padding:28px 30px 26px;
+    box-shadow:0 14px 42px -8px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.35);
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+    position:relative;
+    box-sizing:border-box;
+    overflow:hidden;
+}
+
+#preload-overlay .preload-box::before {
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(circle at 15% 20%,rgba(90,160,255,.16),transparent 60%),
+      radial-gradient(circle at 85% 70%,rgba(0,200,255,.13),transparent 65%);
+    pointer-events:none;
+}
+
+.preload-header {
+    display:flex;
+    gap:16px;
+    align-items:flex-start;
+}
+.preload-title-wrap { flex:1; min-width:0; }
+.preload-title {
+    margin:0 0 4px;
+    font-size:1.3em;
+    letter-spacing:.6px;
+    font-weight:700;
+    color:#f4f9ff;
+    text-shadow:0 1px 2px rgba(0,0,0,.6);
+}
+.preload-sub {
+    margin:0;
+    font-size:.78em;
+    line-height:1.45;
+    color:#c5d4e5;
+    letter-spacing:.2px;
+    opacity:.95;
+}
+
+/* Progress Bar */
+.bar-outer {
+    width:100%;
+    height:18px;
+    background:#3a3f46;
+    border-radius:12px;
+    overflow:hidden;
+    position:relative;
+    border:1px solid #4d5660;
+}
+.bar-inner {
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg,#6da7ff,#5edbff 55%,#64fff6);
+    background-size:200% 100%;
+    animation:barFlow 3.2s linear infinite;
+    border-radius:12px;
+    box-shadow:0 0 0 1px rgba(255,255,255,.15) inset,0 2px 6px -2px rgba(0,0,0,.6);
+    transition:width .35s cubic-bezier(.4,.7,.4,1);
+}
+@keyframes barFlow {
+    0% { background-position:0 0; }
+    100% { background-position:-200% 0; }
+}
+
+.preload-stats {
+    display:flex;
+    justify-content:space-between;
+    font-size:.78em;
+    font-weight:600;
+    letter-spacing:.3px;
+    color:#d0dde9;
+    text-shadow:0 1px 1px rgba(0,0,0,.35);
+    margin-top:-4px;
+}
+.preload-stats .phase {
+    text-align:right;
+    max-width:60%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+/* Spinner */
+.spinner {
+    width:50px;
+    height:50px;
     border-radius:50%;
     position:relative;
     background:
-      conic-gradient(from 0deg,#7bc4ff,#5edbff 130deg,rgba(255,255,255,0) 170deg 360deg);
-    animation:spin 1s linear infinite;
+      conic-gradient(from 0deg,#86cfff,#5edbff 120deg,rgba(255,255,255,0) 175deg 360deg);
+    animation:spin 1.0s linear infinite;
     flex-shrink:0;
+    box-shadow:0 0 0 3px rgba(255,255,255,0.05),
+               0 4px 10px -2px rgba(0,0,0,.55),
+               inset 0 0 8px rgba(255,255,255,.08);
 }
-
-#preload-overlay .spinner::after {
+.spinner::after {
     content:"";
     position:absolute;
-    inset:6px;
+    inset:7px;
     background:#262a30;
     border-radius:50%;
-    box-shadow:0 0 0 1px #38424d;
+    box-shadow:0 0 0 1px #39424d;
 }
-
 @keyframes spin { to { transform:rotate(360deg); } }
 
-/* 폴백 (conic-gradient 미지원 브라우저) */
+/* conic-gradient 미지원 폴백 */
 @supports not (background: conic-gradient(red, blue)) {
-  #preload-overlay .spinner {
-     background:none;
-     border:4px solid #2f3a44;
-     border-top-color:#64e7ff;
-     animation:spin 0.9s linear infinite;
-  }
-  #preload-overlay .spinner::after { display:none; }
+    .spinner {
+        background:none;
+        border:5px solid #2f3a44;
+        border-top-color:#6fe9ff;
+        animation:spin .9s linear infinite;
+    }
+    .spinner::after { display:none; }
+}
+
+@media (max-width:580px) {
+    #preload-overlay .preload-box {
+        width:94%;
+        padding:24px 22px 22px;
+    }
+    .preload-title { font-size:1.15em; }
+    .spinner { width:42px; height:42px; }
 }
