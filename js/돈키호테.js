@@ -2,8 +2,8 @@
 
 /* 이상의 모든 인격 + 에고 정의 */
 registerCharacter({
-    characterName: '이상',
-    defaultIcon: './기타/수감자_이상.png',
+    characterName: '돈키호테',
+    defaultIcon: './기타/수감자_돈키호테.png',
     personalities: [
         {
             id: 'yi_sang_001',
@@ -712,7 +712,7 @@ registerCharacter({
                 }
             },
             {
-                id:'yi_sang_ego_007',
+                id:'yi_sang_ego_006',
                 name:'흉탄',
                 season: '5',
                 image:'./수감자/에고/이상/흉탄/일러스트.png',

@@ -3,38 +3,100 @@
 (function() {
 
 /* =========================================================
-   1. 키워드 하이라이트: 대량 지정 + 수동 지정
+   1. 키워드 하이라이트: 대량 지정 + 수동 지정 + 예외(제외) 목록
+   - 실제 색칠 대상: (1) 패시브 효과, (2) 서포트 패시브 효과, (3) E.G.O 코인 효과
+   - 예외 목록(HIGHLIGHT_EXCLUDE)에 있는 문자열 내부는 어떤 키워드도 색칠되지 않음
 ========================================================= */
 
 /*
   형식:
-  "키1", "키2", "키3": "Color",
-  여러 줄 가능, 끝에 쉼표 있어도 됨.
+  "키1", "키2": "Color",
+  여러 줄 가능, 끝에 쉼표 가능.
+  (원하는 키워드를 여기 또는 EXTRA_MAP 에 추가)
 */
 const KEYWORD_BULK_SPEC = `
-    "출혈", "침잠", "파열", "진동", "화상", "마비", "취약", "속박", "위력 감소", "공격 위력 감소",
-    "수비 위력 감소", "합 위력 감소", "더하기 코인 약화", "빼기 코인 약화", "피해량 감소",
-    "공격 레벨 감소", "방어 레벨 감소", "분노 피해량 감소", "색욕 피해량 감소",
-    "나태 피해량 감소", "탐식 피해량 감소", "우울 피해량 감소", "오만 피해량 감소",
-    "질투 피해량 감소", "참격 피해량 감소", "관통 피해량 감소", "타격 피해량 감소",
-    "분노 취약", "색욕 취약", "나태 취약", "탐식 취약", "우울 취약", "오만 취약",
-    "질투 취약", "참격 취약", "관통 취약", "타격 취약", "정신력 회복 효율 감소",
-    "정신력 감소 효율 증가", "체력 회복 감소", "행동 불가", "[피아식별불가]": "red",
+"출혈", "침잠", "파열", "진동", "화상", "마비", "취약", "속박", "위력 감소", "공격 위력 감소",
+"수비 위력 감소", "합 위력 감소", "더하기 코인 약화", "빼기 코인 약화", "피해량 감소",
+"공격 레벨 감소", "방어 레벨 감소", "분노 피해량 감소", "색욕 피해량 감소",
+"나태 피해량 감소", "탐식 피해량 감소", "우울 피해량 감소", "오만 피해량 감소",
+"질투 피해량 감소", "참격 피해량 감소", "관통 피해량 감소", "타격 피해량 감소",
+"분노 취약", "색욕 취약", "나태 취약", "탐식 취약", "우울 취약", "오만 취약",
+"질투 취약", "참격 취약", "관통 취약", "타격 취약", "정신력 회복 효율 감소",
+"정신력 감소 효율 증가", "체력 회복 감소", "행동 불가", "[피아식별불가]", "나비",
+"구더기", "저주", "약점 분석", "못", "결투 선포 - 돈키호테", "결투 선포 - 싱클레어",
+"결투 선포 - 오티스", "앙갚음 대상", "흑염", "저택의 메아리", "시간 유예",
+"시선", "경멸", "시선의 경멸", "차원 균열", "올가미", "주살【신속】", "주살【독】", "주살【파】",
+"히스테리", "역변-리버스드", "악당 표식", "분홍 리본", "주시", "방출 전류",
+"침잠쇄도", "부적", "홍매화", "버.표", "[합 패배]", "다가오는 파탄",
+"초청받지 않은 자", "집중 공격 - 뫼르소", "재봉 대상", "목마른 장미", "장미 쐐기",
+"미끼 요정", "점혈 - 돈키호테", "복수 대상", "달궈진 새장", "얽혀버린 저주 부적", "지네 독",
+"뇌진탕", "진동 - 붕괴", "진동 - 균열", "진동 - 반향", "진동 - 영속", "진동 - 사슬",
+"진동 - 작열", "진동 - 과다출혈", "분노 위력 감소", "색욕 위력 감소",  "나태 위력 감소",
+"탐식 위력 감소", "우울 위력 감소", "오만 위력 감소", "참격 위력 감소", "관통 위력 감소",
+"타격 위력 감소", "붕괴 표식": "red",
 
-    "호흡", "충전", '보호", "신속", "위력 증가", "공격 위력 증가", "수비 위력 증가", "합 위력 증가",
-    "더하기 코인 강화", "빼기 코인 강화", "피해량 증가", "약점 공격 시 피해량 증가", "공격 레벨 증가",
-    "수비 레벨 증가", "분노 피해량 증가", "색욕 피해량 증가", "나태 피해량 증가",
-    "탐식 피해량 증가", "우울 피해량 증가", "오만 피해량 증가", "질투 피해량 증가",
-    "참격 피해량 증가", "관통 피해량 증가", "타격 피해량 증가", "분노 보호",
-    "색욕 보호", "나태 보호", "탐식 보호", "우울 보호", "오만 보호", "질투 보호",
-    "참격 보호", "관통 보호", "타격 보호", "정신력 회복 효율 증가", "정신력 감소 효율 감소",
-    "체력 회복 증가", "도발치": "yellow"
+"호흡", "충전", "보호", "신속", "위력 증가", "공격 위력 증가", "수비 위력 증가", "합 위력 증가",
+"더하기 코인 강화", "빼기 코인 강화", "피해량 증가", "약점 공격 시 피해량 증가", "공격 레벨 증가",
+"방어 레벨 증가", "분노 피해량 증가", "색욕 피해량 증가", "나태 피해량 증가",
+"탐식 피해량 증가", "우울 피해량 증가", "오만 피해량 증가", "질투 피해량 증가",
+"참격 피해량 증가", "관통 피해량 증가", "타격 피해량 증가", "분노 보호",
+"색욕 보호", "나태 보호", "탐식 보호", "우울 보호", "오만 보호", "질투 보호",
+"참격 보호", "관통 보호", "타격 보호", "정신력 회복 효율 증가", "정신력 감소 효율 감소",
+"체력 회복 증가", "E.G.O 자원 획득량+", "광신", "파열 보호", "부하",
+"충전 역장", "시간 대여", "경멸의 시선", "피어나는 가시", "구름 장벽", "흑운도",
+"각력【묘】", "오혈", "사완", "마법소녀 등장!", "사랑/증오", "매지컬 아르카나",
+"마법소녀의 영창", "지키는 검", "깊은 눈물", "눈물 벼리기", "꿰뚫는 검", "가호", "절망",
+"갈증", "부당 수익", "과열된 가스 작살", "본국검 - 세법 전수", "본국검 - 자법 전수",
+"본국검술", "왕의 앞으로", "묶인 왕의 앞으로", "지식 단련", "듀라한",
+"와일드헌트", "적안", "참회", "방어 태세", "핏빛 가위날", "피어나는 가시",
+"축제의 열기", "경혈", "일렁임【혈귀】", "집중【저격】", "첫번째 마탄",
+"두번째 마탄", "세번째 마탄", "네번째 마탄", "다섯번째 마탄", "여섯번째 마탄",
+"일곱번째 마탄", "깊은 들숨", "네뷸라이저 β", "네뷸라이저 α",
+"앙갚음 장부 [싱클레어]", "매화침[埋花針]", "불허[不許]", "매화첨[埋花櫼]",
+"원[援]", "작열 추진탄", "강기 [剛氣]", "강기 - 신 [剛氣-心]", "오버히트",
+"흉탄", "강력 징수 집행", "축적된 과거", "사중구활[死中求活]", "모든 흑수의 주인",
+"몰아침", "흑수환염[黑獸丸染]", "각력【오】", "적진 주파", "호령", "혈염[血炎]",
+"진동 - 태엽감기", "진동 폭발", "관", "분노 위력 증가", "색욕 위력 증가",  "나태 위력 증가",
+"탐식 위력 증가", "우울 위력 증가", "오만 위력 증가", "참격 위력 증가", "관통 위력 증가",
+"타격 위력 증가": "yellow",
+
+"파괴 불가 코인", "탄환", "도발치", "버림", "탐구한 지식", "마탄", "찢어진 추억",
+"전략적 휴식 복지 모드", "딜리버리 캐리어 - 로쟈", "딜리버리 캐리어 - 싱클레어",
+"혈찬", "누적 소모 혈찬", "공용 누적 소모 혈찬", "타겟 포착", "후방 지원 배치",
+"재장전", "검은 구름", "천구성도", "원호 방어", "광역 난사", "전장 퇴각",
+"뜻에 따라, 베겠습니다.", "합 가능 가드", "시술", "K사 앰플", "1대1 대결",
+"원호 공격", "불안정한 격정", "울음 방울", "산나비·죽은나비", "피로 물든 손",
+"닳아버린 마음", "책임감", "탄환 - 로직 아틀리에", "근접 지원", "12구산 연료",
+"과열 연료", "시[始]", "대[待]", "호표탄", "맹호표탄", "호위", "존명",
+"진폭 변환", "진폭 얽힘", "가쁜 날숨": "brown",
+
+"[크리티컬 적중 시]", "[적중시]", "[사용전]", "[파괴되지 않고 적중시]", "[공격 종료시]",
+"[전투 시작시]", "[공격 시작 전]", "[대상 처치 시]", "[합 승리 후 적중시]", "[턴 종료 시]",
+"[적 처치 시]", "[적 처치 실패시]", "[아군 처치 시]", "[아군 처치 실패시]", "[뒷면 적중시]": "lightgreen",
+
+"[사용시]": "skyblue",
+
+"[합 가능 반격]": "#F1670E",
+
+"[합 승리시]": "orange",
+
+"[앞면 적중시]": "greenyellow",
+
+"[앞면 공격 종료 시]": "pink",
+
+"[뒷면 공격 종료 시]": "purple"
 `;
 
-/* 수동(우선) 덮어쓰기용 맵 */
+/* 추가/수동 우선 맵 (Bulk 보다 우선) */
 const KEYWORD_HIGHLIGHT_EXTRA_MAP = {
-  /* "호흡": "#13836e",*/
 };
+
+/* 예외(하이라이트 제외) 목록
+   - 여기에 적힌 문자열 전체 구간은 내부 키워드도 색칠 안 됨.
+*/
+const HIGHLIGHT_EXCLUDE = [
+  "소수점 버림", "보호막", "산나비를", "죽은나비를 부", "죽은나비를 얻음", "나비(", "관찰", "광신도"
+];
 
 /* -------- Bulk Spec 파서 -------- */
 function parseBulkSpec(spec) {
@@ -71,9 +133,8 @@ function slugKeyword(word) {
     return word
         .trim()
         .toLowerCase()
-        .replace(/[^a-z0-9가-힣]+/gi, '-')      // 한/영/숫자 외 → -
-        .replace(/^-+|-+$/g,'')                 // 앞뒤 -
-        || 'kw';
+        .replace(/[^a-z0-9가-힣]+/gi, '-')  // 한글/영문/숫자 외 → -
+        .replace(/^-+|-+$/g,'') || 'kw';
 }
 
 /* 동적 스타일 삽입 */
@@ -90,31 +151,77 @@ function slugKeyword(word) {
     document.head.appendChild(styleEl);
 })();
 
-/* 문자열 -> 하이라이트 HTML */
-function highlightKeywords(rawText) {
-    if (!rawText) return "";
-    let safe = rawText
+/* HTML escape (색칠 안 하는 영역용) */
+function escapeHtml(str="") {
+    return str
         .replace(/&/g,"&amp;")
         .replace(/</g,"&lt;")
-        .replace(/>/g,"&gt;")
-        .replace(/\n/g,"<br>");
+        .replace(/>/g,"&gt;");
+}
 
+/* 문자열 -> (선택 영역 전용) 하이라이트 HTML
+   적용 대상 ONLY:
+   - 패시브 효과
+   - 서포트 패시브 효과
+   - E.G.O 코인 효과
+   처리 단계:
+   1) 예외 문자열 마스킹
+   2) 이스케이프
+   3) \n -> <br> 변환
+   4) 키워드 하이라이트
+   5) 마스크 복원(복원 시 escape 적용된 원문 넣기)
+*/
+function highlightKeywords(rawText) {
+    if (!rawText) return "";
+
+    // 1) 예외 마스킹 (길이 긴 것부터)
+    const excludes = HIGHLIGHT_EXCLUDE
+        .filter(Boolean)
+        .sort((a,b)=>b.length - a.length);
+
+    const tokens = [];
+    let working = rawText;
+
+    excludes.forEach((phrase, idx) => {
+        const esc = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const token = `__EXC_${idx}_${Math.random().toString(36).slice(2)}__`;
+        tokens.push({token, phrase});
+        working = working.replace(new RegExp(esc, 'g'), token);
+    });
+
+    // 2) Escape
+    let safe = working
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
+
+    // 3) 줄바꿈
+    safe = safe.replace(/\n/g,"<br>");
+
+    // 4) 하이라이트
     const words = Object.keys(KEYWORD_HIGHLIGHT_MAP)
         .filter(w => w && w.trim())
         .sort((a,b)=>b.length - a.length);
-    if (!words.length) return safe;
+    if (words.length) {
+        const escapedWords = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
+        const pattern = new RegExp("(" + escapedWords.join("|") + ")", "g");
+        safe = safe.replace(pattern, m => {
+            const cls = "kw-" + slugKeyword(m);
+            return `<span class="kw ${cls}">${m}</span>`;
+        });
+    }
 
-    const escaped = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-    const pattern = new RegExp("(" + escaped.join("|") + ")", "g");
-    safe = safe.replace(pattern, m => {
-        const cls = "kw-" + slugKeyword(m);
-        return `<span class="kw ${cls}">${m}</span>`;
+    // 5) 예외 복원 (복원 시 escapeHtml 적용 + <br> 처리)
+    tokens.forEach(({token, phrase}) => {
+        const escapedPhrase = escapeHtml(phrase).replace(/\n/g,"<br>");
+        safe = safe.replace(new RegExp(token, 'g'), escapedPhrase);
     });
+
     return safe;
 }
 
 /* =========================================================
-   2. 기존 앱 로직 (하이라이트 적용만 삽입)
+   2. 기존 앱 로직 (지정 섹션에만 highlightKeywords 적용)
 ========================================================= */
 
 let decks = [];
@@ -299,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const hidePrevSeason = isFilterActive('prevseason');
         const s = item?.season;
         if (hideCollabo && s === 'collabo') return false;
-               if (hideWalpurgis && s === 'walpurgis') return false;
+        if (hideWalpurgis && s === 'walpurgis') return false;
         if (hidePrevSeason && typeof s === 'number' && s === (CURRENT_SEASON - 1)) return false;
         return true;
     };
@@ -318,6 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const egoDetails = item.egoDetails;
         let cardHtml = '';
 
+        // 패시브 / 서포트 패시브 (효과만 하이라이트)
         const renderGroupedPassives = (passives, title) => {
             if (!passives || !passives.length) return '';
             const groups = new Map();
@@ -333,8 +441,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const groupsHtml = [...groups.values()].map(g => {
                 const itemsHtml = g.items.map(it => {
-                    const nameHtml   = highlightKeywords(it.name);
-                    const effectHtml = highlightKeywords(it.effect);
+                    const nameHtml   = escapeHtml(it.name);            // 이름은 색칠 X
+                    const effectHtml = highlightKeywords(it.effect);   // 효과만 색칠
                     return `
                         <div class="passive-block compact">
                             <div class="passive-line"><strong>이름:</strong><span>${nameHtml}</span></div>
@@ -346,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="passive-group">
                         <div class="passive-line">
                             <strong>조건:</strong>
-                            <span>${g.img ? `<img src="${g.img}" class="condition-icon">` : ''}${highlightKeywords(g.cond)}</span>
+                            <span>${g.img ? `<img src="${g.img}" class="condition-icon">` : ''}${escapeHtml(g.cond)}</span>
                         </div>
                         <div class="passive-items">${itemsHtml}</div>
                     </div>
@@ -376,7 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
             cardHtml = `
                 <div class="detail-illustration-top" style="background-image:url('${personalityDetails.fullImage}')"></div>
                 <div class="detail-info-bottom personality">
-                    <div class="detail-card-header"><h4>${item.name}</h4></div>
+                    <div class="detail-card-header"><h4>${escapeHtml(item.name)}</h4></div>
                     <div class="detail-section">
                         <h5>스킬</h5>
                         <div class="detail-skills-grid">${skillBlocks}</div>
@@ -386,7 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="detail-section">
                         <h5>키워드</h5>
                         <div class="detail-keywords-list">
-                            ${(personalityDetails.keywords || []).map(k=>`<span>${highlightKeywords(k)}</span>`).join('')}
+                            ${(personalityDetails.keywords || []).map(k=>`<span>${escapeHtml(k)}</span>`).join('')}
                         </div>
                     </div>
                 </div>
@@ -399,7 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const passiveHtml = egoDetails.passive ? `
                 <div class="ego-passive-box">
                     <h5>패시브</h5>
-                    <div class="passive-line"><strong>이름:</strong><span>${highlightKeywords(egoDetails.passive.name||'')}</span></div>
+                    <div class="passive-line"><strong>이름:</strong><span>${escapeHtml(egoDetails.passive.name||'')}</span></div>
                     <div class="passive-line"><strong>효과:</strong><span class="effect">${highlightKeywords(egoDetails.passive.effect||'')}</span></div>
                 </div>
             ` : '';
@@ -407,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="ego-keywords-box">
                     <h5>키워드</h5>
                     <div class="ego-keywords-pills">
-                        ${egoDetails.keywords.map(k=>`<span>${highlightKeywords(k)}</span>`).join('')}
+                        ${egoDetails.keywords.map(k=>`<span>${escapeHtml(k)}</span>`).join('')}
                     </div>
                 </div>
             ` : '';
@@ -425,6 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return '';
             };
 
+            // 코인 효과 텍스트만 하이라이트
             const renderCoinEffects = (ver) => {
                 if (!ver?.coins) return '';
                 return `
@@ -502,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="detail-info-bottom ego-wide-layout">
                     <div class="ego-layout">
                         <div class="ego-left">
-                            <div class="ego-name"><h4>${item.name}</h4></div>
+                            <div class="ego-name"><h4>${escapeHtml(item.name)}</h4></div>
                             <div class="ego-cost-box">
                                 <h5>사용 자원</h5>
                                 <div class="ego-cost-list">${costHtml}</div>

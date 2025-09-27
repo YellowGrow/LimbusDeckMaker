@@ -121,7 +121,7 @@ body {
 .skill-with-type .skill-type-badge { width:auto !important; height:22px !important; display:block; border-radius:0 !important; object-fit:contain; }
 .detail-keywords-list { display:flex; flex-wrap:wrap; gap:6px; }
 .detail-keywords-list span { background-color:#555; padding:3px 8px; border-radius:12px; font-size:.85em; }
-.passive-group { margin-top:6px; }
+.passive-group { margin-top:6px; font-size: 1.1em; line-height: 1.6;}
 .passive-items { margin-top:6px; }
 .passive-block.compact { margin:0; }
 .skill-with-type { display:flex; flex-direction:column; align-items:center; gap:8px; min-width:70px; }
@@ -168,9 +168,9 @@ body {
 .detail-info-bottom.personality .detail-section hr { border:none; border-top:1px solid #333; margin:8px 0; }
 .detail-info-bottom.personality .detail-card-header { padding-bottom:4px; margin-bottom:-2px; }
 .detail-info-bottom.personality .detail-card-header h4 { font-size:1.4em; margin:0; border-bottom:1px solid #333; padding:4px 0 8px; letter-spacing:.5px; }
-.detail-info-bottom.personality .passive-line { font-size:1em !important; line-height:1.5; }
+.detail-info-bottom.personality .passive-line { font-size:1em !important; line-height:1.6; }
 .detail-info-bottom.personality .passive-line > strong { font-size:1em !important; font-weight:600; width:40px !important; letter-spacing:0; color:#bbb; }
-.detail-info-bottom.personality .detail-keywords-list span { font-size:.85em !important; letter-spacing:0; padding:3px 8px; }
+.detail-info-bottom.personality .detail-keywords-list span { font-size:0.95em; !important; letter-spacing:0; padding:3px 8px; }
 
 /* E.G.O wide layout */
 .ego-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -215,13 +215,13 @@ body {
 
 .ego-cost-box,
 .ego-passive-box,
-.ego-keywords-box { background:#222; padding:8px 10px; border-radius:6px; }
+.ego-keywords-box { background:#222; padding:8px 10px; border-radius:6px; font-size:1.1em; line-height:1.6; }
 .ego-cost-box h5,
 .ego-passive-box h5,
 .ego-keywords-box h5 { margin:0 0 6px 0; font-size:1em !important; line-height:1.25; color:#e67e22; }
 
 .ego-keywords-pills { display:flex; flex-wrap:wrap; gap:6px; }
-.ego-keywords-pills span { background:#444; padding:4px 10px; border-radius:14px; font-size:.85em !important; letter-spacing:0; }
+.ego-keywords-pills span { background:#444; padding:4px 10px; border-radius:14px; font-size:.95em !important; letter-spacing:0; }
 
 .ego-version-block {
     margin-top:0 !important;
@@ -256,14 +256,14 @@ body {
     gap:4px;
 }
 .meta-item .label {
-    font-size:.85em !important;
+    font-size:1em !important;
     letter-spacing:.3px;
     color:#bbb;
     text-transform:uppercase;
 }
 .meta-item .value {
     font-weight:600;
-    font-size:.95em;
+    font-size:1em;
     display:flex;
     align-items:center;
     gap:4px;
@@ -289,11 +289,12 @@ body {
     display:flex;
     gap:6px;
     align-items:flex-start;
+    font-size: 1.2em;
 }
 .coin-effect-left { min-width:0; width:26px; display:flex; flex-direction:column; align-items:center; gap:2px; }
 .coin-index-icon { width:22px; height:22px; object-fit:contain; }
 .coin-effect-left .coin-faces { display:none; }
-.coin-effect-text { flex:1; font-size:.9em; line-height:1.45; white-space:pre-line; margin:0; }
+.coin-effect-text { flex:1; font-size:.9em; line-height:1.6; white-space:pre-line; margin:0; }
 
 /* 자동 스크롤 상세뷰 */
 #detail-view.auto-scroll {
@@ -463,4 +464,9 @@ body {
     margin:14px 0 12px !important;
     position:relative;
     height:0;
+}
+.ego-slot.has-ego {
+    background-color:#000;
+    /* 필요하면 약간의 부드러운 전환 */
+    transition:background-color .15s;
 }
