@@ -539,27 +539,35 @@ body {
 
 /* === Preload Overlay === */
 #preload-overlay {
-    position:fixed;
-    inset:0;
-    background:rgba(20,20,24,.9);
-    color:#f1f1f1;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    z-index:4000;
-    font-family:sans-serif;
+  position:fixed !important;
+  inset:0 !important;          /* top:0; right:0; bottom:0; left:0 */
+  width:100vw;
+  height:100vh;
+  z-index:99999;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:rgba(20,20,24,.9);
+  pointer-events:all;
+  /* 혹시 body가 flex라면 flex-item 특성 제거 */
+  flex:0 0 auto;
 }
-#preload-overlay.hidden { display:none; }
+
+#preload-overlay.hidden {
+  display:none !important;
+}
+
+/* 내부 박스 기존 스타일 (필요 시 그대로 유지) */
 #preload-overlay .preload-box {
-    width:340px;
-    background:#2f2f33;
-    padding:28px 26px 24px;
-    border-radius:14px;
-    box-shadow:0 6px 24px rgba(0,0,0,.4);
-    display:flex;
-    flex-direction:column;
-    gap:14px;
-    box-sizing:border-box;
+  width:340px;
+  background:#2f2f33;
+  padding:28px 26px 24px;
+  border-radius:14px;
+  box-shadow:0 6px 24px rgba(0,0,0,.4);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  box-sizing:border-box;
 }
 #preload-overlay h3 {
     margin:0 0 4px;
